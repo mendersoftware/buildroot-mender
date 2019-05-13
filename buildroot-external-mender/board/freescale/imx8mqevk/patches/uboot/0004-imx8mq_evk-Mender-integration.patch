@@ -1,0 +1,71 @@
+From cd43614f7280466044f8f23ce62f4320ed70ee70 Mon Sep 17 00:00:00 2001
+From: Mirza Krak <mirza.krak@northern.tech>
+Date: Mon, 15 Apr 2019 19:24:47 +0200
+Subject: [PATCH 4/4] imx8mq_evk: Mender integration
+
+Signed-off-by: Mirza Krak <mirza.krak@northern.tech>
+---
+ include/configs/imx8mq_evk.h | 27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
+
+diff --git a/include/configs/imx8mq_evk.h b/include/configs/imx8mq_evk.h
+index 6cff7fea2b..321563844a 100644
+--- a/include/configs/imx8mq_evk.h
++++ b/include/configs/imx8mq_evk.h
+@@ -136,14 +136,13 @@
+ 	"initrd_high=0xffffffffffffffff\0" \
+ 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
+ 	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+-	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
+ 	"mmcautodetect=yes\0" \
+-	"mmcargs=setenv bootargs ${jh_clk} console=${console} root=${mmcroot}\0 " \
++	"mmcargs=setenv bootargs ${jh_clk} console=${console} root=${mender_kernel_root}\0 " \
+ 	"loadbootscript=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+ 	"bootscript=echo Running bootscript from mmc ...; " \
+ 		"source\0" \
+-	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
++	"loadimage=ext4load ${mender_uboot_root} ${loadaddr} /boot/${image}\0" \
++	"loadfdt=ext4load ${mender_uboot_root} ${fdt_addr} /boot/${fdt_file}\0" \
+ 	"mmcboot=echo Booting from mmc ...; " \
+ 		"run mmcargs; " \
+ 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+@@ -178,15 +177,13 @@
+ 
+ #define CONFIG_BOOTCOMMAND \
+ 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
+-		   "if run loadbootscript; then " \
+-			   "run bootscript; " \
+-		   "else " \
+-			   "if run loadimage; then " \
+-				   "run mmcboot; " \
+-			   "else run netboot; " \
+-			   "fi; " \
++	   	   "run mender_setup; " \
++		   "if run loadimage; then " \
++			   "run mmcboot; " \
++			   "run mender_try_to_recover; " \
++		   "else run netboot; " \
+ 		   "fi; " \
+-	   "else booti ${loadaddr} - ${fdt_addr}; fi"
++	   "fi"
+ 
+ /* Link Definitions */
+ #define CONFIG_LOADADDR			0x40480000
+@@ -201,10 +198,10 @@
+         (CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
+ 
+ #define CONFIG_ENV_OVERWRITE
+-#define CONFIG_ENV_OFFSET               (64 * SZ_64K)
++
+ #define CONFIG_ENV_SIZE			0x1000
+-#define CONFIG_SYS_MMC_ENV_DEV		1   /* USDHC2 */
+-#define CONFIG_MMCROOT			"/dev/mmcblk1p2"  /* USDHC2 */
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
+ 
+ /* Size of malloc() pool */
+ #define CONFIG_SYS_MALLOC_LEN		((CONFIG_ENV_SIZE + (2*1024) + (16*1024)) * 1024)
+-- 
+2.21.0
+
