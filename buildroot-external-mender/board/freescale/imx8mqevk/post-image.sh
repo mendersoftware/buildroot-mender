@@ -12,7 +12,7 @@ if [ -z "${device_type}" ] || [ -z "${artifact_name}" ]; then
 fi
 
 ${HOST_DIR}/usr/bin/mender-artifact write rootfs-image \
-    --update ${BINARIES_DIR}/rootfs.ext4 \
+    --file ${BINARIES_DIR}/rootfs.ext4 \
     --output-path ${BINARIES_DIR}/${artifact_name}.mender \
     --artifact-name ${artifact_name} \
     --device-type ${device_type}
