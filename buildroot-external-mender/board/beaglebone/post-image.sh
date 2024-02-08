@@ -2,8 +2,8 @@
 set -e
 CWD=$(pwd)
 BOARD_DIR="$(realpath "$(dirname "$0")")"
-source "${BOARD_DIR}"/../../common/post-image-include
-DEVICE_TYPE="buildroot-imx8mqevk"
+source "${BOARD_DIR}"/../common/post-image-include
+DEVICE_TYPE="buildroot-beaglebone"
 
 # Generate the SDCard image.
 generate_image(){
@@ -14,7 +14,7 @@ generate_image(){
 # Main function.
 main(){
   parse_args "${@}"
-  make_data_partition "64bit"
+  make_data_partition "^64bit"
   generate_image
   generate_mender_image
   exit $?

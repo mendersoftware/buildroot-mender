@@ -1,0 +1,468 @@
+From cd31e72cfe183fad199a6205cf474cb26d8b69a7 Mon Sep 17 00:00:00 2001
+From: Adam Duskett <aduskett@gmail.com>
+Date: Thu, 8 Feb 2024 11:26:47 +0100
+Subject: [PATCH] Add mender support
+
+Signed-off-by: Adam Duskett <aduskett@gmail.com>
+---
+ Kconfig                   |   2 +
+ include/config_mender.h   |  96 ++++++++++++++++++++++++
+ include/env_default.h     |   7 +-
+ include/env_mender.h      | 154 ++++++++++++++++++++++++++++++++++++++
+ mender/Kconfig            | 110 +++++++++++++++++++++++++++
+ scripts/Makefile.autoconf |   3 +-
+ tools/env/fw_env.c        |   1 +
+ 7 files changed, 370 insertions(+), 3 deletions(-)
+ create mode 100644 include/config_mender.h
+ create mode 100644 include/env_mender.h
+ create mode 100644 mender/Kconfig
+
+diff --git a/Kconfig b/Kconfig
+index 00ed1ecc..d806b399 100644
+--- a/Kconfig
++++ b/Kconfig
+@@ -741,3 +741,5 @@ source "lib/Kconfig"
+ source "test/Kconfig"
+ 
+ source "tools/Kconfig"
++
++source "mender/Kconfig"
+diff --git a/include/config_mender.h b/include/config_mender.h
+new file mode 100644
+index 00000000..741b3202
+--- /dev/null
++++ b/include/config_mender.h
+@@ -0,0 +1,96 @@
++/*
++  Copyright 2017 Northern.tech AS
++
++  This program is free software; you can redistribute it and/or
++  modify it under the terms of the GNU General Public License
++  as published by the Free Software Foundation; either version 2
++  of the License, or (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++*/
++
++#ifndef HEADER_CONFIG_MENDER_H
++#define HEADER_CONFIG_MENDER_H
++
++/* Avoid Mender specific code if we are just probing for configuration. */
++#ifndef MENDER_AUTO_PROBING
++
++#ifdef CONFIG_ENV_IS_NOWHERE
++# error A CONFIG_ENV_IS_IN_<storage-type> define is required for Mender to work. For standard Mender setups this should be CONFIG_ENV_IS_IN_MMC for HD/SSD/MMC/SD storage setup, and CONFIG_ENV_IS_IN_UBI for Flash/UBI storage.
++#endif
++
++#ifndef CONFIG_BOOTCOUNT_LIMIT
++# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#endif
++
++/* Currently Mender needs bootcount to reside in environment. */
++#ifndef CONFIG_BOOTCOUNT_ENV
++# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#endif
++
++#ifndef CONFIG_SYS_REDUNDAND_ENVIRONMENT
++# error CONFIG_SYS_REDUNDAND_ENVIRONMENT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
++#endif
++
++#ifdef MENDER_UBI
++# ifndef CONFIG_MTDIDS_DEFAULT
++#  define CONFIG_MTDIDS_DEFAULT CONFIG_MENDER_MTDIDS
++# endif
++# ifndef CONFIG_MTDPARTS_DEFAULT
++#  define CONFIG_MTDPARTS_DEFAULT "mtdparts=" ## CONFIG_MENDER_MTDPARTS
++# endif
++# ifndef CONFIG_ENV_UBI_PART
++#  define CONFIG_ENV_UBI_PART          CONFIG_MENDER_MTD_UBI_DEVICE_NAME
++# endif
++# ifndef CONFIG_ENV_UBI_VOLUME
++#  define CONFIG_ENV_UBI_VOLUME        "u-boot-env-1"
++# endif
++# ifndef CONFIG_ENV_UBI_VOLUME_REDUND
++#  define CONFIG_ENV_UBI_VOLUME_REDUND "u-boot-env-2"
++# endif
++#else
++# if defined(CONFIG_ENV_OFFSET)
++#  if CONFIG_ENV_OFFSET != CONFIG_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
++#   error CONFIG_ENV_OFFSET is not the same as CONFIG_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
++#  endif
++# else
++#  define CONFIG_ENV_OFFSET CONFIG_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
++# endif
++# if defined(CONFIG_ENV_OFFSET_REDUND)
++#  if CONFIG_ENV_OFFSET_REDUND != CONFIG_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
++#   error CONFIG_ENV_OFFSET_REDUND is not the same as CONFIG_MENDER_ENV_OFFSET_REDUND. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
++#  endif
++# else
++#  define CONFIG_ENV_OFFSET_REDUND CONFIG_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
++# endif
++# ifdef CONFIG_SYS_MMC_ENV_DEV
++#  if CONFIG_SYS_MMC_ENV_DEV != CONFIG_MENDER_UBOOT_STORAGE_DEVICE
++#   error CONFIG_SYS_MMC_ENV_DEV is not the same as CONFIG_MENDER_UBOOT_STORAGE_DEVICE. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#  endif
++# else
++#  define CONFIG_SYS_MMC_ENV_DEV   CONFIG_MENDER_UBOOT_STORAGE_DEVICE
++# endif
++# ifndef CONFIG_SYS_MMC_ENV_PART
++   /* Use MMC partition zero to select whole user area of memory card. */
++#  define CONFIG_SYS_MMC_ENV_PART  0
++# endif
++#endif
++
++#ifdef CONFIG_ENV_SIZE
++# if CONFIG_MENDER_BOOTENV_SIZE != CONFIG_ENV_SIZE
++#  error 'CONFIG_ENV_SIZE' define must be equal 'CONFIG_MENDER_BOOTENV_SIZE'.
++# endif
++#else
++# define CONFIG_ENV_SIZE CONFIG_MENDER_BOOTENV_SIZE
++#endif
++
++#endif /* !MENDER_AUTO_PROBING */
++
++#endif /* HEADER_CONFIG_MENDER_H */
+diff --git a/include/env_default.h b/include/env_default.h
+index 2ca4a087..86c7c838 100644
+--- a/include/env_default.h
++++ b/include/env_default.h
+@@ -12,6 +12,8 @@
+ 
+ #include <generated/environment.h>
+ 
++#include <env_mender.h>
++
+ #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
+ env_t embedded_environment __UBOOT_ENV_SECTION__(environment) = {
+ 	ENV_CRC,	/* CRC Sum */
+@@ -26,6 +28,7 @@ char default_environment[] = {
+ #else
+ const char default_environment[] = {
+ #endif
++	MENDER_ENV_SETTINGS
+ #ifndef CONFIG_USE_DEFAULT_ENV_FILE
+ #ifdef	CONFIG_ENV_CALLBACK_LIST_DEFAULT
+ 	ENV_CALLBACK_VAR "=" CONFIG_ENV_CALLBACK_LIST_DEFAULT "\0"
+@@ -36,8 +39,8 @@ const char default_environment[] = {
+ #ifdef	CONFIG_USE_BOOTARGS
+ 	"bootargs="	CONFIG_BOOTARGS			"\0"
+ #endif
+-#ifdef	CONFIG_BOOTCOMMAND
+-	"bootcmd="	CONFIG_BOOTCOMMAND		"\0"
++#ifdef	CONFIG_MENDER_BOOTCOMMAND
++	"bootcmd="	CONFIG_MENDER_BOOTCOMMAND	"\0"
+ #endif
+ #if defined(CONFIG_BOOTDELAY)
+ 	"bootdelay="	__stringify(CONFIG_BOOTDELAY)	"\0"
+diff --git a/include/env_mender.h b/include/env_mender.h
+new file mode 100644
+index 00000000..dd630599
+--- /dev/null
++++ b/include/env_mender.h
+@@ -0,0 +1,154 @@
++/*
++  Copyright 2017 Northern.tech AS
++
++  This program is free software; you can redistribute it and/or
++  modify it under the terms of the GNU General Public License
++  as published by the Free Software Foundation; either version 2
++  of the License, or (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++*/
++
++#ifndef HEADER_ENV_MENDER_H
++#define HEADER_ENV_MENDER_H
++
++/* Avoid Mender specific code if we are just probing for configuration. */
++#ifdef MENDER_AUTO_PROBING
++#define MENDER_ENV_SETTINGS
++#else
++
++#ifdef MENDER_NO_DEFAULT_ALTBOOTCMD
++# define MENDER_DEFAULT_ALTBOOTCMD
++#else
++# define MENDER_DEFAULT_ALTBOOTCMD "altbootcmd=run mender_altbootcmd; " \
++    "run bootcmd\0"
++#endif
++
++#ifdef MENDER_UBI
++# define MENDER_UBI_SETTINGS \
++    "mender_mtd_ubi_dev_name=" CONFIG_MENDER_MTD_UBI_DEVICE_NAME "\0"
++#else
++# define MENDER_UBI_SETTINGS
++#endif
++
++#define MENDER_ENV_SETTINGS                                             \
++    MENDER_DEFAULT_ALTBOOTCMD                                           \
++    MENDER_UBI_SETTINGS                                                 \
++                                                                        \
++    "bootlimit=1\0"                                                     \
++    "bootcount=0\0"                                                     \
++                                                                        \
++    "upgrade_available=0\0"                                             \
++                                                                        \
++    "mender_boot_part=" __stringify(CONFIG_MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
++                                                                        \
++    "mender_boot_part_hex=" __stringify(CONFIG_MENDER_ROOTFS_PART_A_NUMBER_HEX) "\0"   \
++                                                                        \
++    "mender_uboot_boot=" CONFIG_MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(CONFIG_MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(CONFIG_MENDER_BOOT_PART_NUMBER_HEX) "\0" \
++                                                                        \
++    "mender_uboot_if=" CONFIG_MENDER_UBOOT_STORAGE_INTERFACE "\0"              \
++                                                                        \
++    "mender_uboot_dev=" __stringify(CONFIG_MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
++                                                                        \
++    "mender_boot_kernel_type=" CONFIG_MENDER_BOOT_KERNEL_TYPE "\0"             \
++                                                                        \
++    "mender_kernel_name=" CONFIG_MENDER_KERNEL_NAME "\0"                       \
++                                                                        \
++    "mender_dtb_name=" CONFIG_MENDER_DTB_NAME "\0"                             \
++                                                                        \
++    "mender_pre_setup_commands=" CONFIG_MENDER_UBOOT_PRE_SETUP_COMMANDS "\0"   \
++                                                                        \
++    "mender_post_setup_commands=" CONFIG_MENDER_UBOOT_POST_SETUP_COMMANDS "\0" \
++                                                                        \
++    "mender_check_saveenv_canary=1\0"                                   \
++                                                                        \
++    "mender_setup="                                                     \
++    "if test \"${mender_saveenv_canary}\" != \"1\"; then "              \
++    "setenv mender_saveenv_canary 1; "                                  \
++    "saveenv; "                                                         \
++    "fi; "                                                              \
++    "if test \"${mender_pre_setup_commands}\" != \"\"; "                \
++    "then "                                                             \
++    "run mender_pre_setup_commands; "                                   \
++    "fi; "                                                              \
++    "if test \"${mender_systemd_machine_id}\" != \"\"; "                \
++    "then "                                                             \
++    "setenv bootargs \"systemd.machine_id=${mender_systemd_machine_id} ${bootargs}\"; " \
++    "fi; "                                                              \
++    "setenv mender_kernel_root " CONFIG_MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
++    "if test ${mender_boot_part} = " __stringify(CONFIG_MENDER_ROOTFS_PART_A_NUMBER) "; "     \
++    "then "                                                                            \
++    "setenv mender_boot_part_name " CONFIG_MENDER_ROOTFS_PART_A_NAME "; "                     \
++    "else "                                                                             \
++    "setenv mender_boot_part_name " CONFIG_MENDER_ROOTFS_PART_B_NAME "; "                     \
++    "fi; "                                                                             \
++    "setenv mender_kernel_root_name ${mender_boot_part_name}; "         \
++    "setenv mender_uboot_root " CONFIG_MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(CONFIG_MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part_hex}; " \
++    "setenv mender_uboot_root_name ${mender_boot_part_name}; "          \
++    "setenv expand_bootargs \"setenv bootargs \\\\\"${bootargs}\\\\\"\"; "              \
++    "run expand_bootargs; "                                             \
++    "setenv expand_bootargs; "                                          \
++    "if test \"${mender_post_setup_commands}\" != \"\"; "               \
++    "then "                                                             \
++    "run mender_post_setup_commands; "                                  \
++    "fi\0"                                                              \
++                                                                        \
++    "mender_altbootcmd="                                                \
++    "if test ${mender_boot_part} = " __stringify(CONFIG_MENDER_ROOTFS_PART_A_NUMBER) "; "     \
++    "then "                                                                            \
++    "setenv mender_boot_part " __stringify(CONFIG_MENDER_ROOTFS_PART_B_NUMBER) "; "           \
++    "setenv mender_boot_part_hex " __stringify(CONFIG_MENDER_ROOTFS_PART_B_NUMBER_HEX) "; "           \
++    "else "                                                                            \
++    "setenv mender_boot_part " __stringify(CONFIG_MENDER_ROOTFS_PART_A_NUMBER) "; "           \
++    "setenv mender_boot_part_hex " __stringify(CONFIG_MENDER_ROOTFS_PART_A_NUMBER_HEX) "; "           \
++    "fi; "                                                              \
++    "setenv upgrade_available 0; "                                      \
++    "saveenv; "                                                         \
++    "run mender_setup\0"                                                \
++                                                                        \
++    "mender_try_to_recover="                                            \
++    "if test ${upgrade_available} = 1; "                                \
++    "then reset; "                                                      \
++    "fi\0"
++
++#ifdef MENDER_UBI
++# define MENDER_BOOTARGS                                                \
++    "setenv bootargs root=${mender_kernel_root} "                       \
++    "${mtdparts} "                                                      \
++    "ubi.mtd=${mender_mtd_ubi_dev_name} "                               \
++    "rootfstype=ubifs "                                                 \
++    "${bootargs}; "
++# define MENDER_LOAD_KERNEL_AND_FDT                                     \
++    "ubi part ${mender_mtd_ubi_dev_name}; "                             \
++    "ubifsmount ${mender_uboot_root_name}; "                            \
++    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
++    "ubifsload ${fdt_addr_r} /boot/${mender_dtb_name}; "                \
++    "fi; "                                                              \
++    "ubifsload ${kernel_addr_r} /boot/${mender_kernel_name}; "
++#else
++# define MENDER_BOOTARGS                                                \
++    "setenv bootargs root=${mender_kernel_root} ${bootargs}; "
++# define MENDER_LOAD_KERNEL_AND_FDT                                     \
++    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
++    "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
++    "fi; "                                                              \
++    "load ${mender_uboot_root} ${kernel_addr_r} /boot/${mender_kernel_name}; "
++#endif
++
++#define CONFIG_MENDER_BOOTCOMMAND                                       \
++    "run mender_setup; "                                                \
++    MENDER_BOOTARGS                                                     \
++    MENDER_LOAD_KERNEL_AND_FDT                                          \
++    "${mender_boot_kernel_type} ${kernel_addr_r} - ${fdt_addr_r}; "     \
++    "run mender_try_to_recover"
++
++#endif /* !MENDER_AUTO_PROBING */
++
++#endif /* HEADER_ENV_MENDER_H */
+diff --git a/mender/Kconfig b/mender/Kconfig
+new file mode 100644
+index 00000000..eb6b79e6
+--- /dev/null
++++ b/mender/Kconfig
+@@ -0,0 +1,110 @@
++menu "Mender options"
++
++comment "Rootfs information"
++
++config MENDER_BOOT_PART_NUMBER_HEX
++	hex "Boot part number default"
++	default 1
++
++config MENDER_ROOTFS_PART_A_NUMBER
++	int "Rootfs part A number"
++	default 1
++
++config MENDER_ROOTFS_PART_A_NUMBER_HEX
++	hex "Rootfs part A number hex"
++	default 1
++
++config MENDER_ROOTFS_PART_A_NAME
++	string "Rootfs part A path"
++	default "/dev/mmcblk0p1"
++	help
++	  Full path to RootFS Part A
++
++config MENDER_ROOTFS_PART_B_NUMBER
++	int "Rootfs part B number"
++	default 2
++
++config MENDER_ROOTFS_PART_B_NUMBER_HEX
++	hex "Rootfs part B number hex"
++	default 2
++
++config MENDER_ROOTFS_PART_B_NAME
++	string "Rootfs part B path"
++	default "/dev/mmcblk0p2"
++	help
++	  Full path to RootFS Part B
++
++config MENDER_UBOOT_STORAGE_INTERFACE
++	string "mender uboot storage interface"
++	default "mmc"
++	help
++	  U-boot storage interface
++
++config MENDER_UBOOT_STORAGE_DEVICE
++	int "mender uboot storage device"
++	default 0
++	help
++	  U-boot storage device number
++
++comment "Environment information"
++
++config MENDER_STORAGE_DEVICE_BASE
++	string "mender uboot environment storage device path"
++	default "/dev/mmcblk0p"
++	help
++	  Full device path to store the environment information
++
++config MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
++	hex "Environment storage offset 1"
++	help
++	  Environment storage device offset 1
++
++config MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
++	hex "Environment storage offset 2"
++	help
++	  Environment storage device offset 2
++
++config MENDER_BOOTENV_SIZE
++	hex "Boot environment size"
++	help
++	  Boot environment size in hex.
++
++comment "Kernel variables"
++
++config MENDER_LINUX_LOAD_ADDR
++	string "mender linux load address"
++	help
++	  The load address for the kernel
++
++config MENDER_FDT_LOAD_ADDR
++	string "mender fdt load address"
++	help
++	  The load address for the kernel dtb file
++
++config MENDER_BOOT_KERNEL_TYPE
++	string "kernel type"
++	help
++	  U-boot kernel type
++
++config MENDER_KERNEL_NAME
++	string "kernel name"
++	help
++	  U-boot kernel name
++
++config MENDER_DTB_NAME
++	string "kernel dtb name"
++	help
++	  U-boot dtb name
++
++comment "Optional settings"
++config MENDER_UBOOT_PRE_SETUP_COMMANDS
++	string "Uboot pre-setup commands"
++	help
++	  Specify commands to run before mender runs setup.
++
++config MENDER_UBOOT_POST_SETUP_COMMANDS
++	string "Uboot post-setup commands"
++	help
++	  Specify commands to run before mender boots.
++
++endmenu
+diff --git a/scripts/Makefile.autoconf b/scripts/Makefile.autoconf
+index 0ade9164..c653f1af 100644
+--- a/scripts/Makefile.autoconf
++++ b/scripts/Makefile.autoconf
+@@ -116,7 +116,8 @@ define filechk_config_h
+ 	echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\>;		\
+ 	echo \#include \<asm/config.h\>;				\
+ 	echo \#include \<linux/kconfig.h\>;				\
+-	echo \#include \<config_fallbacks.h\>;)
++	echo \#include \<config_fallbacks.h\>;				\
++	echo \#include \<config_mender.h\>;)
+ endef
+ 
+ include/config.h: scripts/Makefile.autoconf create_symlink FORCE
+diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
+index c9a8774a..64fd2380 100644
+--- a/tools/env/fw_env.c
++++ b/tools/env/fw_env.c
+@@ -20,6 +20,7 @@
+ #include <ctype.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <stdint.h>
+ #include <stddef.h>
+ #include <string.h>
+ #include <sys/types.h>
+-- 
+2.43.0
+

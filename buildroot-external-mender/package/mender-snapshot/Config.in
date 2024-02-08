@@ -1,0 +1,11 @@
+config BR2_PACKAGE_MENDER_SNAPSHOT
+	bool "mender-snapshot"
+	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
+	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+	help
+	  A tool create a snapshot of the current running rootfs
+	  partition. It is used by the mender-artifact tool to generate
+	  a "golden image" Artifact based on the current rootfs
+	  partition of a given device.
+
+	  https://github.com/mendersoftware/mender-snapshot

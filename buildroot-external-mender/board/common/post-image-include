@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -e
+
+ARTIFACT_NAME="2023.11.1"
+DATA_PART_SIZE="16M"
+GENERATE_MENDER_IMAGE="false"
+
+# See https://northerntech.atlassian.net/browse/MEN-2585
+generate_mender_bootstrap_artifact() {
+  rm -rf "${BINARIES_DIR}"/data-part
+  rm -rf "${BINARIES_DIR}"/data-part.ext4
+  mkdir -p "${BINARIES_DIR}"/data-part/mender
+  img_checksum=$(sha256sum "${BINARIES_DIR}"/rootfs.ext4 |awk '{print $1}')
+  "${HOST_DIR}"/bin/mender-artifact \
+    write bootstrap-artifact \
+    --artifact-name "${ARTIFACT_NAME}" \
+    --device-type "${DEVICE_TYPE}" \
+    --provides "rootfs-image.version:${ARTIFACT_NAME}" \
+    --provides "rootfs-image.checksum:${img_checksum}" \
+    --clears-provides "rootfs-image.*" \
+    --output-path "${BINARIES_DIR}"/data-part/mender/bootstrap.mender \
+    --version 3
+}
+
+# Create the data partition
+make_data_partition() {
+  generate_mender_bootstrap_artifact
+  "${HOST_DIR}"/sbin/mkfs.ext4 \
+  -d "${BINARIES_DIR}"/data-part \
+  -r 1 \
+  -N 0 \
+  -m 5 \
+  -L "data" \
+  -O "${1}" "${BINARIES_DIR}"/data-part.ext4 "${DATA_PART_SIZE}"
+  "${HOST_DIR}"/sbin/e2fsck -y "${BINARIES_DIR}"/data-part.ext4
+}
+
+# Create a mender image.
+generate_mender_image() {
+  if [[ ${GENERATE_MENDER_IMAGE} == "true" ]]; then
+    echo "Creating ${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender"
+    "${HOST_DIR}"/bin/mender-artifact \
+      --compression lzma \
+      write rootfs-image \
+      -t "${DEVICE_TYPE}" \
+      -n "${BR2_VERSION}" \
+      -f "${BINARIES_DIR}"/rootfs.ext2 \
+      -o "${BINARIES_DIR}"/"${DEVICE_TYPE}"-"${ARTIFACT_NAME}".mender
+  fi
+}
+
+# Parse arguments.
+parse_args() {
+    local o O opts
+    o='a:d:g:t:'
+    O='artifact-name:,data-part-size:,device-type:,generate-mender-image:'
+    opts="$(getopt -o "${o}" -l "${O}" -- "${@}")"
+    eval set -- "${opts}"
+    while [ ${#} -gt 0 ]; do
+        case "${1}" in
+        (-a|--artifact-name) ARTIFACT_NAME="${2}"; shift 2;;
+        (-d|--data-part-size) DATA_PART_SIZE="${2}"; shift 2;;
+        (-g|--generate-mender-image) GENERATE_MENDER_IMAGE="${2}"; shift 2;;
+        (-t|--device-type) DEVICE_TYPE="${2}"; shift 2;;
+        (--) shift; break;;
+        esac
+    done
+}
+

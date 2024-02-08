@@ -1,0 +1,36 @@
+version: "3.7"
+services:
+   buildroot-mender:
+    build:
+      context: ./
+      args:
+         BUILDROOT_USER: br-user
+         BUILDROOT_DIR: buildroot
+         BUILDROOT_VERSION: 2023.11.1
+         # Space deliminated list of external trees of which to use.
+         EXTERNAL_TREES: buildroot-external-mender
+         BUILDROOT_PATCH_DIR: "buildroot-external-mender/patches/buildroot/"
+         UID: 1000
+         GID: 1000
+    environment:
+      - APPLY_CONFIGS
+      - CLEAN_AFTER_BUILD
+      - ENV_FILES
+      - EXIT_AFTER_BUILD
+      - NO_BUILD
+      - UPDATE_DCFC_PROGRAMS
+      - VERBOSE
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    privileged: true
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./:/mnt
+      - buildroot-mender-ccache:/home/ccache
+    image: buildroot-mender:latest
+    container_name:  buildroot-mender
+volumes:
+  buildroot-mender-ccache:
