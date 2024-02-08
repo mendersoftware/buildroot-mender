@@ -1,4 +1,8 @@
-# Buildroot community board integrations for Mender
+# Please note: This repository is not maintained by Northern Tech anymore.
+# However, it is under active development!
+#
+#
+# It is recommended you use this repository for the latest mender packagess if you plan on using Mender with your Buildroot system, as the maintainers of Buildroot are slow to respond to pull requests that bump the Mender package versions. Sometimes up to 4+ months. Please check the various branches for a specific Buildroot version, starting with 2023.11.x.
 
 Mender is an open source over-the-air (OTA) software updater for embedded Linux
 devices. Mender comprises a client running at the embedded device, as well as
