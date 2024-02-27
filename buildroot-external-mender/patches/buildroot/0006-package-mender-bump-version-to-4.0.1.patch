@@ -1,0 +1,719 @@
+From 829af3fe134c74a1b8b3fb12f890683327c06a03 Mon Sep 17 00:00:00 2001
+From: Adam Duskett <adam.duskett@amarulasolutions.com>
+Date: Thu, 22 Feb 2024 16:42:01 -0700
+Subject: [PATCH] package/mender: bump version to 4.0.1
+
+A complete rewrite of the package, as it is now a cmake package.
+
+Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
+---
+ board/mender/x86_64/post-build.sh             |   5 +-
+ board/mender/x86_64/post-image-efi.sh         |  20 ++
+ package/mender/Config.in                      |  53 +++++-
+ package/mender/S42mender                      |  60 ------
+ package/mender/artifact_info                  |   1 -
+ package/mender/{ => files}/device_type        |   0
+ package/mender/files/mender-authd.service     |  13 ++
+ package/mender/files/mender-client.service    |  13 ++
+ .../files/mender-set-systemd-machine-id.sh    |  40 ++++
+ .../files/mender-systemd-machine-id.service   |  12 ++
+ package/mender/mender-client.service          |  24 ---
+ package/mender/mender.conf                    |   1 +
+ package/mender/mender.hash                    |  48 ++---
+ package/mender/mender.mk                      | 173 +++++++++---------
+ support/testing/tests/package/test_mender.py  |   3 +
+ .../tests/package/test_mender/post-build.sh   |  24 +++
+ 16 files changed, 270 insertions(+), 220 deletions(-)
+ delete mode 100644 package/mender/S42mender
+ delete mode 100644 package/mender/artifact_info
+ rename package/mender/{ => files}/device_type (100%)
+ create mode 100644 package/mender/files/mender-authd.service
+ create mode 100644 package/mender/files/mender-client.service
+ create mode 100644 package/mender/files/mender-set-systemd-machine-id.sh
+ create mode 100644 package/mender/files/mender-systemd-machine-id.service
+ delete mode 100644 package/mender/mender-client.service
+ create mode 100755 support/testing/tests/package/test_mender/post-build.sh
+
+diff --git a/board/mender/x86_64/post-build.sh b/board/mender/x86_64/post-build.sh
+index 23d1120d45..6ee16ad242 100755
+--- a/board/mender/x86_64/post-build.sh
++++ b/board/mender/x86_64/post-build.sh
+@@ -1,7 +1,6 @@
+ #!/usr/bin/env bash
+ set -e
+ DEVICE_TYPE="buildroot-x86_64"
+-ARTIFACT_NAME="1.0"
+ 
+ function parse_args {
+     local o O opts
+@@ -19,7 +18,8 @@ function parse_args {
+             DEVICE_TYPE="${2}"; shift 2
+             ;;
+         (-a|--artifact-name)
+-            ARTIFACT_NAME="${2}"; shift 2
++            # Ignored to have same options as other scripts
++            shift 2
+             ;;
+         (--)
+             shift; break
+@@ -48,7 +48,6 @@ function main {
+     parse_args "${@}"
+     mender_fixup
+     echo "device_type=${DEVICE_TYPE}" > "${TARGET_DIR}/etc/mender/device_type"
+-    echo "artifact_name=${ARTIFACT_NAME}" > "${TARGET_DIR}/etc/mender/artifact_info"
+ }
+ 
+ main "${@}"
+diff --git a/board/mender/x86_64/post-image-efi.sh b/board/mender/x86_64/post-image-efi.sh
+index 97b9e06d21..d184378696 100755
+--- a/board/mender/x86_64/post-image-efi.sh
++++ b/board/mender/x86_64/post-image-efi.sh
+@@ -31,9 +31,28 @@ function parse_args {
+     done
+ }
+ 
++# Generate a mender bootstrap artifact.
++# See https://northerntech.atlassian.net/browse/MEN-2585
++generate_mender_bootstrap_artifact() {
++  rm -rf "${BINARIES_DIR}"/data-part
++  mkdir -p "${BINARIES_DIR}"/data-part
++  img_checksum=$(sha256sum "${BINARIES_DIR}"/rootfs.ext4 |awk '{print $1}')
++
++  "${HOST_DIR}"/bin/mender-artifact \
++    write bootstrap-artifact \
++    --artifact-name "${ARTIFACT_NAME}" \
++    --device-type "${DEVICE_TYPE}" \
++    --provides "rootfs-image.version:${ARTIFACT_NAME}" \
++    --provides "rootfs-image.checksum:${img_checksum}" \
++    --clears-provides "rootfs-image.*" \
++    --output-path "${BINARIES_DIR}"/data-part/bootstrap.mender \
++    --version 3
++}
++
+ # Create the data partition
+ function make_data_partition {
+     "${HOST_DIR}/sbin/mkfs.ext4" \
++        -d "${BINARIES_DIR}"/data-part \
+         -F \
+         -r 1 \
+         -N 0 \
+@@ -63,6 +82,7 @@ function generate_image {
+ # Main function.
+ function main {
+     parse_args "${@}"
++    generate_mender_bootstrap_artifact
+     make_data_partition
+     generate_image
+     generate_mender_image
+diff --git a/package/mender/Config.in b/package/mender/Config.in
+index 7d768cebec..1ecddc68af 100644
+--- a/package/mender/Config.in
++++ b/package/mender/Config.in
+@@ -1,12 +1,27 @@
+ config BR2_PACKAGE_MENDER
+ 	bool "mender"
+-	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
+-	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+-	depends on BR2_TOOLCHAIN_HAS_THREADS
++	depends on BR2_INSTALL_LIBSTDCPP # boost
++	depends on BR2_TOOLCHAIN_HAS_THREADS_NPTL # boost-log
++	depends on BR2_TOOLCHAIN_SUPPORTS_ALWAYS_LOCKFREE_ATOMIC_INTS # boost-log
++	depends on !BR2_TOOLCHAIN_HAS_GCC_BUG_64735 # boost-log
++	depends on BR2_USE_MMU # libglib2
++	depends on BR2_USE_WCHAR # libglib2
++	depends on BR2_PACKAGE_SYSTEMD
++	select BR2_PACKAGE_BOOST
++	select BR2_PACKAGE_BOOST_FILESYSTEM
++	select BR2_PACKAGE_BOOST_LOG
++	select BR2_PACKAGE_CA_CERTIFICATES
++	select BR2_PACKAGE_DBUS if !BR2_PACKAGE_DBUS_BROKER
++	select BR2_PACKAGE_JQ
++	select BR2_PACKAGE_LIBARCHIVE
++	select BR2_PACKAGE_LIBGLIB2
++	select BR2_PACKAGE_LMDB
+ 	select BR2_PACKAGE_OPENSSL
+ 	select BR2_PACKAGE_OPENSSL_FORCE_LIBOPENSSL
+ 	select BR2_PACKAGE_LIBOPENSSL_ENABLE_MD4
+ 	select BR2_PACKAGE_LIBOPENSSL_ENABLE_RMD160
++	select BR2_PACKAGE_UTIL_LINUX # runtime
++	select BR2_PACKAGE_UTIL_LINUX_BINARIES # flock
+ 	help
+ 	  Mender is an open source over-the-air (OTA) software updater
+ 	  for embedded Linux devices. Mender comprises a client
+@@ -22,7 +37,7 @@ config BR2_PACKAGE_MENDER
+ 	  https://github.com/mendersoftware/meta-mender/
+ 
+ 	  For more information on Manual U-Boot integration, see:
+-	  https://docs.mender.io/2.6/system-updates-yocto-project/board-integration/bootloader-support/u-boot/manual-u-boot-integration
++	  https://docs.mender.io/3.4/system-updates-yocto-project/board-integration/bootloader-support/u-boot/manual-u-boot-integration
+ 
+ 	  For systems using Grub2 as the bootloader:
+ 	    - Mender depends on the mender-grubenv package.
+@@ -37,7 +52,29 @@ config BR2_PACKAGE_MENDER
+ 
+ 	  https://github.com/mendersoftware/mender
+ 
+-comment "mender needs a toolchain w/ threads"
+-	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
+-	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+-	depends on !BR2_TOOLCHAIN_HAS_THREADS
++if BR2_PACKAGE_MENDER
++
++config BR2_PACKAGE_MENDER_IDENTITY_SCRIPTS
++	bool "install identity scripts"
++
++config BR2_PACKAGE_MENDER_INVENTORY_SCRIPTS
++	bool "install inventory scripts"
++
++config BR2_PACKAGE_MENDER_INVENTORY_NETWORK_SCRIPTS
++	bool "install inventory network scripts"
++	depends on BR2_PACKAGE_BUSYBOX_SHOW_OTHERS
++	select BR2_PACKAGE_WGET # runtime
++
++endif # BR2_PACKAGE_MENDER
++
++comment "mender needs a toolchain w/ C++, NPTL, wchar"
++	depends on BR2_USE_MMU
++	depends on BR2_TOOLCHAIN_SUPPORTS_ALWAYS_LOCKFREE_ATOMIC_INTS
++	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_USE_WCHAR || \
++		!BR2_TOOLCHAIN_HAS_THREADS_NPTL
++
++comment "mender needs a toolchain not affected by GCC bug 64735"
++	depends on BR2_TOOLCHAIN_HAS_GCC_BUG_64735
++
++comment "mender needs systemd"
++	depends on !BR2_PACKAGE_SYSTEMD
+diff --git a/package/mender/S42mender b/package/mender/S42mender
+deleted file mode 100644
+index 0f2077d089..0000000000
+--- a/package/mender/S42mender
++++ /dev/null
+@@ -1,60 +0,0 @@
+-#!/bin/sh
+-#
+-# Starts mender service.
+-#
+-DAEMON="mender"
+-DAEMON_PATH="/usr/bin/mender"
+-PIDFILE="/var/run/${DAEMON}.pid"
+-DAEMON_ARGS="daemon"
+-
+-start() {
+-	# If /var/lib/mender is a symlink to /var/run/mender, and
+-	#   - the filesystem is RO (i.e. we can not rm the symlink),
+-	#     create the directory pointed to by the symlink.
+-	#   - the filesystem is RW (i.e. we can rm the symlink),
+-	#     replace the symlink with an actual directory
+-	if [ -L /var/lib/mender ] && [ "$(readlink /var/lib/mender)" = "/var/run/mender" ]
+-	then
+-		if rm -f /var/lib/mender >/dev/null 2>&1; then
+-			mkdir -p /var/lib/mender
+-		else
+-			echo "No persistent location to store mender data. Data will be lost"
+-			echo "at reboot. Are you sure this is what you want to do?"
+-			mkdir -p "$(readlink /var/lib/mender)"
+-		fi
+-	fi
+-
+-	printf "Starting mender service: "
+-	umask 077
+-	start-stop-daemon -bmSqp "$PIDFILE" -x ${DAEMON_PATH} -- ${DAEMON_ARGS}
+-	status=$?
+-	[ "${status}" = 0 ] && echo "OK" || echo "FAIL"
+-}
+-
+-stop() {
+-	printf "Stopping mender service: "
+-	start-stop-daemon -Kqp "$PIDFILE"
+-	status=$?
+-	[ "${status}" = 0 ] && echo "OK" || echo "FAIL"
+-}
+-restart() {
+-	stop
+-	start
+-}
+-
+-case "$1" in
+-	start)
+-		start
+-		;;
+-	stop)
+-		stop
+-		;;
+-	restart|reload)
+-		restart
+-		;;
+-	*)
+-		echo "Usage: $0 {start|stop|reload|restart}"
+-		exit 1
+-esac
+-
+-exit $?
+diff --git a/package/mender/artifact_info b/package/mender/artifact_info
+deleted file mode 100644
+index 1c84b088d0..0000000000
+--- a/package/mender/artifact_info
++++ /dev/null
+@@ -1 +0,0 @@
+-artifact_name=BUILDROOT_ARTIFACT
+diff --git a/package/mender/device_type b/package/mender/files/device_type
+similarity index 100%
+rename from package/mender/device_type
+rename to package/mender/files/device_type
+diff --git a/package/mender/files/mender-authd.service b/package/mender/files/mender-authd.service
+new file mode 100644
+index 0000000000..41f1f7ef19
+--- /dev/null
++++ b/package/mender/files/mender-authd.service
+@@ -0,0 +1,13 @@
++[Unit]
++Description=Mender OTA update authorization service
++After=data.mount systemd-resolved.service mender-systemd-machine-id.service
++
++[Service]
++Type=idle
++User=root
++Group=root
++ExecStart=/usr/bin/mender-auth daemon
++Restart=on-abort
++
++[Install]
++WantedBy=multi-user.target
+diff --git a/package/mender/files/mender-client.service b/package/mender/files/mender-client.service
+new file mode 100644
+index 0000000000..fff7cadc6b
+--- /dev/null
++++ b/package/mender/files/mender-client.service
+@@ -0,0 +1,13 @@
++[Unit]
++Description=Mender OTA update service
++After=data.mount systemd-resolved.service mender-systemd-machine-id.service mender-auth.service
++
++[Service]
++Type=idle
++User=root
++Group=root
++ExecStart=/usr/bin/mender-update daemon
++Restart=on-abort
++
++[Install]
++WantedBy=multi-user.target
+diff --git a/package/mender/files/mender-set-systemd-machine-id.sh b/package/mender/files/mender-set-systemd-machine-id.sh
+new file mode 100644
+index 0000000000..eb5c26cd29
+--- /dev/null
++++ b/package/mender/files/mender-set-systemd-machine-id.sh
+@@ -0,0 +1,40 @@
++#!/usr/bin/env sh
++set -eu
++# Copyright 2022 Northern.tech AS
++#
++#  Licensed under the Apache License, Version 2.0 (the "License");
++#  you may not use this file except in compliance with the License.
++#  You may obtain a copy of the License at
++#
++# http://www.apache.org/licenses/LICENSE-2.0
++#
++#  Unless required by applicable law or agreed to in writing, software
++#  distributed under the License is distributed on an "AS IS" BASIS,
++#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#  See the License for the specific language governing permissions and
++#  limitations under the License.
++#
++# Write the systemd machine-id to the bootloader environment
++# so that it will persist between updates.
++#
++
++BOOTENV_PRINT=fw_printenv
++BOOTENV_SET=fw_setenv
++if [ -x /usr/bin/grub-mender-grubenv-set ]; then
++  BOOTENV_PRINT=grub-mender-grubenv-print
++  BOOTENV_SET=grub-mender-grubenv-set
++fi
++
++CURRENT_BOOTLOADER_ID=$(${BOOTENV_PRINT} mender_systemd_machine_id | tee /dev/null | cut -d= -f2)
++CURRENT_SYSTEMD_ID=$(cat /etc/machine-id)
++
++rc=0
++if [ -z "${CURRENT_BOOTLOADER_ID}" ] && [ -n "${CURRENT_SYSTEMD_ID}" ]; then
++  ${BOOTENV_SET} "mender_systemd_machine_id" "${CURRENT_SYSTEMD_ID}"
++  rc=${?}
++elif [ "${CURRENT_BOOTLOADER_ID}" != "${CURRENT_SYSTEMD_ID}" ]; then
++  echo "Error; bootloader and systemd disagree on machine-id." >&2
++  rc=1
++fi
++
++exit "${rc}"
+diff --git a/package/mender/files/mender-systemd-machine-id.service b/package/mender/files/mender-systemd-machine-id.service
+new file mode 100644
+index 0000000000..d366fc12db
+--- /dev/null
++++ b/package/mender/files/mender-systemd-machine-id.service
+@@ -0,0 +1,12 @@
++[Unit]
++Description=Mender persistent machine ID for systemd
++ConditionPathExists=/etc/machine-id
++
++[Service]
++Type=oneshot
++User=root
++Group=root
++ExecStart=/usr/bin/mender-set-systemd-machine-id.sh
++
++[Install]
++WantedBy=multi-user.target
+diff --git a/package/mender/mender-client.service b/package/mender/mender-client.service
+deleted file mode 100644
+index 5539a56fd6..0000000000
+--- a/package/mender/mender-client.service
++++ /dev/null
+@@ -1,24 +0,0 @@
+-[Unit]
+-Description=Mender OTA update service
+-After=systemd-resolved.service
+-
+-[Service]
+-Type=idle
+-User=root
+-Group=root
+-ExecStartPre=/bin/sh -c '\
+-if [ -L /var/lib/mender \
+-     -a "$(readlink /var/lib/mender)" = "/var/run/mender" ]; then \
+-    if rm -f /var/lib/mender >/dev/null 2>&1; then \
+-        mkdir -p /var/lib/mender; \
+-    else \
+-        echo "No persistent location to store mender data. Data will be lost" \
+-        echo "at reboot. Are you sure this is what you want to do?"; \
+-        mkdir -p "$(readlink /var/lib/mender)"; \
+-    fi; \
+-fi'
+-ExecStart=/usr/bin/mender daemon
+-Restart=on-abort
+-
+-[Install]
+-WantedBy=multi-user.target
+diff --git a/package/mender/mender.conf b/package/mender/mender.conf
+index f89118ac1b..65b2781366 100644
+--- a/package/mender/mender.conf
++++ b/package/mender/mender.conf
+@@ -4,6 +4,7 @@
+   "RetryPollIntervalSeconds": 300,
+   "RootfsPartA": "/dev/mmcblk0p2",
+   "RootfsPartB": "/dev/mmcblk0p3",
++  "DeviceTypeFile": "/etc/mender/device_type",
+   "ServerCertificate": "/etc/mender/server.crt",
+   "ServerURL": "https://docker.mender.io",
+   "TenantToken": "dummy"
+diff --git a/package/mender/mender.hash b/package/mender/mender.hash
+index d563dc534b..b8890434b5 100644
+--- a/package/mender/mender.hash
++++ b/package/mender/mender.hash
+@@ -1,45 +1,23 @@
+ # Locally computed:
+-sha256  8a149b11b990beb7620b372023eec28df63cee6a1aa4132e88ecef554f080f72  mender-3.4.0.tar.gz
++sha256  909dbadc279b45b00bedd34c0b91c7da5f858838fdeb092038766f855e530a87  mender-584d7966631d0fbde8d7160bad6139c8a88471d6-br1.tar.gz
++sha256  418bdfce185824f861177ce6a0fdeb381bd1d9e0521038c9a636de0b60742fbb  LIC_FILES_CHKSUM.sha256
+ 
+ # Vendor licenses
+ # Generated with sed '/^[A-Za-z0-9_]/s/^/sha256  /' LIC_FILES_CHKSUM.sha256
+ 
+ # Apache-2.0 license.
+-sha256  1033348db7606a7e61b6484f293847cf8d7a35766efebb97e304d4bd5d7f3f6b  LICENSE
+-sha256  1033348db7606a7e61b6484f293847cf8d7a35766efebb97e304d4bd5d7f3f6b  vendor/github.com/mendersoftware/mender-artifact/LICENSE
+-sha256  73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68  vendor/github.com/mendersoftware/openssl/LICENSE
+-sha256  cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  vendor/github.com/minio/sha256-simd/LICENSE
+-sha256  8f5d89b47d7a05a199b77b7e0f362dad391d451ebda4ef48ba11c50c071564c7  vendor/github.com/mendersoftware/progressbar/LICENSE
++sha256  d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
+ #
+-# BSD 2 Clause license.
+-sha256  8d427fd87bc9579ea368fde3d49f9ca22eac857f91a9dec7e3004bdfab7dee86  vendor/github.com/pkg/errors/LICENSE
+-sha256  e4646a82a976369d7ae8f6ed5c11d35dc0af18433a8ccc24c85b459ad8b95128  vendor/github.com/godbus/dbus/LICENSE
+-sha256  2be1b548b0387ca8948e1bb9434e709126904d15f622cc2d0d8e7f186e4d122d  vendor/github.com/gorilla/websocket/LICENSE
++# MIT clause license
++sha256  86b998c792894ccb911a1cb7994f7a9652894e7a094c0b5e45be2f553f45cf14  vendor/json/LICENSE.MIT
++sha256  08c345dca1019879171c2c465410f7bee984bbfbdb177afd2d95bf9ff6267602  vendor/json/docs/mkdocs/docs/home/license.md
++sha256  2aefa40fa7e1c0fab18fbad5b15b02406eea1399d3cca42cc1012b65b4a56f74  vendor/tiny-process-library/LICENSE
+ #
+-# BSD 3 Clause license.
+-sha256  0d9e582ee4bff57bf1189c9e514e6da7ce277f9cd3bc2d488b22fbb39a6d87cf  vendor/github.com/klauspost/compress/LICENSE
+-sha256  2eb550be6801c1ea434feba53bf6d12e7c71c90253e0a9de4a4f46cf88b56477  vendor/github.com/pmezard/go-difflib/LICENSE
+-sha256  2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/golang.org/x/sys/LICENSE
+-sha256  0634b008cee55ca01f0888d2f5aba2d34e66c3f52c31a4e16a5d5d33d0c2a03e  vendor/github.com/bmatsuo/lmdb-go/LICENSE.md
+-sha256  87640bc4df2ceb1559f268a3db1ba859ab780f7ba5b1b4545173d4680a3d918b  vendor/github.com/remyoudompheng/go-liblzma/LICENSE
+-sha256  2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/golang.org/x/term/LICENSE
++# UNLICENSE
++sha256  7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c  vendor/lmdbxx/UNLICENSE
+ #
+-# ISC license.
+-sha256  1b93a317849ee09d3d7e4f1d20c2b78ddb230b4becb12d7c224c927b9d470251  vendor/github.com/davecgh/go-spew/LICENSE
++# CC0 1.0 Universal
++sha256  a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499  vendor/expected/COPYING
+ #
+-# MIT license.
+-sha256  6d2de1cde19c4d2bd8bcd9aaa1d581f4cfa3db9cf71896140330eaa2f2687685  vendor/github.com/klauspost/pgzip/LICENSE
+-sha256  5d966570d7a442d4e969892860a914e542c97f262c873baee8f0aa48e1f40212  vendor/github.com/klauspost/cpuid/v2/LICENSE
+-sha256  51a0c9ec7f8b7634181b8d4c03e5b5d204ac21d6e72f46c313973424664b2e6b  vendor/github.com/sirupsen/logrus/LICENSE
+-sha256  f8e536c1c7b695810427095dc85f5f80d44ff7c10535e8a9486cf393e2599189  vendor/github.com/stretchr/testify/LICENSE
+-sha256  ffa15bdce332058a03a1d923910864fb6e58bf6df66a0e3914284725b327183e  vendor/github.com/ungerik/go-sysfs/LICENSE
+-sha256  da277af11b85227490377fbcac6afccc68be560c4fff36ac05ca62de55345fd7  vendor/github.com/urfave/cli/v2/LICENSE
+-sha256  b2663894033a05fd80261176cd8da1d72546e25842d5c1abcc852ca23b6b61b0  vendor/github.com/stretchr/objx/LICENSE
+-sha256  d18f6323b71b0b768bb5e9616e36da390fbd39369a81807cca352de4e4e6aa0b  vendor/gopkg.in/yaml.v3/LICENSE
+-sha256  08eab1118c80885fa1fa6a6dd7303f65a379fcb3733e063d20d1bbc2c76e6fa1  vendor/github.com/mattn/go-isatty/LICENSE
+-#
+-# OpenLDAP Public License
+-sha256  310fe25c858a9515fc8c8d7d1f24a67c9496f84a91e0a0e41ea9975b1371e569  vendor/github.com/bmatsuo/lmdb-go/LICENSE.mdb.md
+-
+-# sha256 of all the vendor licenses combined
+-sha256  93d9db9b43097b174e362ac8f398aa9a37fcdde2974d0567b62bd6d1e0d22037  LIC_FILES_CHKSUM.sha256
++# Boost Software License
++sha256  c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566  vendor/optional-lite/LICENSE.txt
+diff --git a/package/mender/mender.mk b/package/mender/mender.mk
+index ee1398244b..2a6e29bd07 100644
+--- a/package/mender/mender.mk
++++ b/package/mender/mender.mk
+@@ -4,112 +4,107 @@
+ #
+ ################################################################################
+ 
+-MENDER_VERSION = 3.4.0
+-MENDER_SITE = $(call github,mendersoftware,mender,$(MENDER_VERSION))
+-MENDER_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, OLDAP-2.8
++# 4.0.1
++MENDER_VERSION = 584d7966631d0fbde8d7160bad6139c8a88471d6
++MENDER_SITE = https://github.com/mendersoftware/mender.git
++MENDER_SITE_METHOD = git
++MENDER_GIT_SUBMODULES = YES
++MENDER_LICENSE = Apache-2.0, BSL-1.0, CC0-1.0, MIT, Unlicense
+ MENDER_CPE_ID_VENDOR = northern.tech
+-
+-# Vendor license paths generated with:
+-#    awk '{print $2}' LIC_FILES_CHKSUM.sha256 | grep vendor
+ MENDER_LICENSE_FILES = \
+ 	LICENSE \
+ 	LIC_FILES_CHKSUM.sha256 \
+-	vendor/github.com/mendersoftware/mender-artifact/LICENSE \
+-	vendor/github.com/mendersoftware/openssl/LICENSE \
+-	vendor/github.com/minio/sha256-simd/LICENSE \
+-	vendor/github.com/mendersoftware/progressbar/LICENSE \
+-	vendor/github.com/pkg/errors/LICENSE \
+-	vendor/github.com/godbus/dbus/LICENSE \
+-	vendor/github.com/gorilla/websocket/LICENSE \
+-	vendor/github.com/klauspost/compress/LICENSE \
+-	vendor/github.com/pmezard/go-difflib/LICENSE \
+-	vendor/golang.org/x/sys/LICENSE \
+-	vendor/github.com/bmatsuo/lmdb-go/LICENSE.md \
+-	vendor/github.com/remyoudompheng/go-liblzma/LICENSE \
+-	vendor/golang.org/x/term/LICENSE \
+-	vendor/github.com/davecgh/go-spew/LICENSE \
+-	vendor/github.com/klauspost/pgzip/LICENSE \
+-	vendor/github.com/klauspost/cpuid/v2/LICENSE \
+-	vendor/github.com/sirupsen/logrus/LICENSE \
+-	vendor/github.com/stretchr/testify/LICENSE \
+-	vendor/github.com/ungerik/go-sysfs/LICENSE \
+-	vendor/github.com/urfave/cli/v2/LICENSE \
+-	vendor/github.com/stretchr/objx/LICENSE \
+-	vendor/gopkg.in/yaml.v3/LICENSE \
+-	vendor/github.com/mattn/go-isatty/LICENSE \
+-	vendor/github.com/bmatsuo/lmdb-go/LICENSE.mdb.md
+-
+-MENDER_DEPENDENCIES = host-pkgconf openssl
+-
+-MENDER_LDFLAGS = -X github.com/mendersoftware/mender/conf.Version=$(MENDER_VERSION)
+-
+-MENDER_UPDATE_MODULES_FILES = \
+-	directory \
+-	script \
+-	single-file \
+-	$(if $(BR2_PACKAGE_DOCKER_CLI),docker) \
+-	$(if $(BR2_PACKAGE_RPM),rpm)
+-
+-define MENDER_INSTALL_CONFIG_FILES
+-	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/mender/scripts
+-	echo -n "3" > $(TARGET_DIR)/etc/mender/scripts/version
+-
+-	$(INSTALL) -D -m 0644 $(MENDER_PKGDIR)/mender.conf \
+-		$(TARGET_DIR)/etc/mender/mender.conf
+-	$(INSTALL) -D -m 0644 $(MENDER_PKGDIR)/server.crt \
+-		$(TARGET_DIR)/etc/mender/server.crt
+-
+-	$(INSTALL) -D -m 0755 $(@D)/support/mender-device-identity \
+-		$(TARGET_DIR)/usr/share/mender/identity/mender-device-identity
+-	$(foreach f,bootloader-integration hostinfo network os rootfs-type, \
+-		$(INSTALL) -D -m 0755 $(@D)/support/mender-inventory-$(f) \
+-			$(TARGET_DIR)/usr/share/mender/inventory/mender-inventory-$(f)
+-	)
+-
+-	$(INSTALL) -D -m 0755 $(MENDER_PKGDIR)/artifact_info \
+-			$(TARGET_DIR)/etc/mender/artifact_info
+-
+-	$(INSTALL) -D -m 0755 $(MENDER_PKGDIR)/device_type \
+-			$(TARGET_DIR)/etc/mender/device_type
+-
+-	mkdir -p $(TARGET_DIR)/var/lib
+-	ln -snf /var/run/mender $(TARGET_DIR)/var/lib/mender
+-	$(foreach f,$(MENDER_UPDATE_MODULES_FILES), \
+-		$(INSTALL) -D -m 0755 $(@D)/support/modules/$(notdir $(f)) \
+-			$(TARGET_DIR)/usr/share/mender/modules/v3/$(notdir $(f))
+-	)
+-endef
++	vendor/json/LICENSE.MIT \
++	vendor/json/docs/mkdocs/docs/home/license.md \
++	vendor/tiny-process-library/LICENSE \
++	vendor/lmdbxx/UNLICENSE \
++	vendor/expected/COPYING \
++	vendor/optional-lite/LICENSE.txt
++
++MENDER_DEPENDENCIES += \
++	host-pkgconf \
++	boost \
++	ca-certificates \
++	jq \
++	libarchive \
++	libglib2 \
++	lmdb \
++	openssl \
++	systemd \
++	util-linux
++
++MENDER_INSTALL_TARGET_OPTS += \
++	install-bin \
++	install-dbus \
++	install-modules
++
++ifeq ($(BR2_PACKAGE_DBUS_BROKER),y)
++MENDER_DEPENDENCIES += dbus-broker
++else
++MENDER_DEPENDENCIES += dbus
++endif
++
++ifeq ($(BR2_PACKAGE_MENDER_IDENTITY_SCRIPTS),y)
++MENDER_INSTALL_TARGET_OPTS += install-identity-scripts
++endif
+ 
+-MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_CONFIG_FILES
++ifeq ($(BR2_PACKAGE_MENDER_INVENTORY_SCRIPTS),y)
++MENDER_INSTALL_TARGET_OPTS += install-inventory-scripts
++endif
++
++ifeq ($(BR2_PACKAGE_MENDER_INVENTORY_NETWORK_SCRIPTS),y)
++MENDER_DEPENDENCIES += wget
++MENDER_INSTALL_TARGET_OPTS += install-inventory-network-scripts
++endif
++
++ifeq ($(BR2_PACKAGE_GZIP),y)
++MENDER_DEPENDENCIES += gzip
++MENDER_CONF_OPTS += -DMENDER_ARTIFACT_GZIP_COMPRESSION=ON
++else
++MENDER_CONF_OPTS += -DMENDER_ARTIFACT_GZIP_COMPRESSION=OFF
++endif
+ 
+ ifeq ($(BR2_PACKAGE_XZ),y)
+ MENDER_DEPENDENCIES += xz
++MENDER_CONF_OPTS += -DMENDER_ARTIFACT_LZMA_COMPRESSION=ON
+ else
+-MENDER_TAGS += nolzma
++MENDER_CONF_OPTS += -DMENDER_ARTIFACT_LZMA_COMPRESSION=OFF
+ endif
+ 
+-ifeq ($(BR2_PACKAGE_DBUS)$(BR2_PACKAGE_LIBGLIB2),yy)
+-MENDER_DEPENDENCIES += libglib2
+-define MENDER_INSTALL_DBUS_AUTHENTICATION_MANAGER_CONF
+-	$(INSTALL) -D -m 0755 $(@D)/support/dbus/io.mender.AuthenticationManager.conf \
+-		$(TARGET_DIR)/etc/dbus-1/system.d/io.mender.AuthenticationManager.conf
+-
+-	$(INSTALL) -D -m 0755 $(@D)/support/dbus/io.mender.UpdateManager.conf \
+-		$(TARGET_DIR)/etc/dbus-1/system.d/io.mender.UpdateManager.conf
+-endef
+-MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_DBUS_AUTHENTICATION_MANAGER_CONF
++ifeq ($(BR2_PACKAGE_ZSTD),y)
++MENDER_DEPENDENCIES += zstd
++MENDER_CONF_OPTS += -DMENDER_ARTIFACT_ZSTD_COMPRESSION=ON
+ else
+-MENDER_TAGS += nodbus
++MENDER_CONF_OPTS += -DMENDER_ARTIFACT_ZSTD_COMPRESSION=OFF
+ endif
+ 
++define MENDER_INSTALL_MISSING_FILES
++	$(INSTALL) -D -m 0755 \
++		$(@D)/vendor/tiny-process-library/libtiny-process-library.so \
++	$(TARGET_DIR)/usr/lib/libtiny-process-library.so
++endef
++MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_MISSING_FILES
++
+ define MENDER_INSTALL_INIT_SYSTEMD
+-	$(INSTALL) -D -m 0644 $(MENDER_PKGDIR)/mender-client.service \
++	$(INSTALL) -D -m 0644 $(MENDER_PKGDIR)/files/mender-authd.service \
++		$(TARGET_DIR)/usr/lib/systemd/system/mender-authd.service
++
++	$(INSTALL) -D -m 0644 $(MENDER_PKGDIR)/files/mender-client.service \
+ 		$(TARGET_DIR)/usr/lib/systemd/system/mender-client.service
++
++	$(INSTALL) -D -m 0644 $(MENDER_PKGDIR)/files/mender-systemd-machine-id.service \
++		$(TARGET_DIR)/usr/lib/systemd/system/mender-systemd-machine-id.service
++
++	$(INSTALL) -D -m 0755 $(MENDER_PKGDIR)/files/mender-set-systemd-machine-id.sh \
++		$(TARGET_DIR)/usr/bin/mender-set-systemd-machine-id.sh
+ endef
+ 
+-define MENDER_INSTALL_INIT_SYSV
+-	$(INSTALL) -D -m 755 $(MENDER_PKGDIR)/S42mender \
+-		$(TARGET_DIR)/etc/init.d/S42mender
++define MENDER_INSTALL_TARGET_CMDS
++	$(TARGET_MAKE_ENV) \
++	$(TARGET_BUILD_ENV) \
++	DESTDIR=$(TARGET_DIR) \
++	$(BR2_MAKE) -C $(@D) \
++		$(MENDER_INSTALL_TARGET_OPTS)
+ endef
+ 
+-$(eval $(golang-package))
++$(eval $(cmake-package))
+diff --git a/support/testing/tests/package/test_mender.py b/support/testing/tests/package/test_mender.py
+index fdf55ed616..203a3da863 100644
+--- a/support/testing/tests/package/test_mender.py
++++ b/support/testing/tests/package/test_mender.py
+@@ -8,8 +8,11 @@ class TestMender(infra.basetest.BRTest):
+         """
+         BR2_PACKAGE_MENDER=y
+         BR2_TARGET_ROOTFS_CPIO=y
++        BR2_ROOTFS_POST_BUILD_SCRIPT="{}"
+         BR2_ROOTFS_OVERLAY="{}"
++        BR2_PACKAGE_HOST_MENDER_ARTIFACT=y
+         """.format(
++           infra.filepath("tests/package/test_mender/post-build.sh"),
+            # overlay to add a fake 'fw_printenv', used by Mender
+            infra.filepath("tests/package/test_mender/rootfs-overlay"))
+ 
+diff --git a/support/testing/tests/package/test_mender/post-build.sh b/support/testing/tests/package/test_mender/post-build.sh
+new file mode 100755
+index 0000000000..afc647ea74
+--- /dev/null
++++ b/support/testing/tests/package/test_mender/post-build.sh
+@@ -0,0 +1,24 @@
++#!/usr/bin/env bash
++set -e
++DEVICE_TYPE="buildroot-arm"
++ARTIFACT_NAME="RUNTIME_TEST_ARTIFACT_NAME"
++
++generate_mender_bootstrap_artifact() {
++  "${HOST_DIR}"/bin/mender-artifact \
++    write bootstrap-artifact \
++    --artifact-name "${ARTIFACT_NAME}" \
++    --device-type "${DEVICE_TYPE}" \
++    --provides "rootfs-image.version:${ARTIFACT_NAME}" \
++    --clears-provides "rootfs-image.*" \
++    --output-path "${TARGET_DIR}"/var/lib/mender/bootstrap.mender \
++    --version 3
++}
++
++function mender_fixup() {
++  rm -rf "${TARGET_DIR}"/var/lib/mender
++  mkdir -p "${TARGET_DIR}"/var/lib/mender
++}
++
++echo "device_type=${DEVICE_TYPE}" > "${TARGET_DIR}"/etc/mender/device_type
++mender_fixup
++generate_mender_bootstrap_artifact
+-- 
+2.43.2
+

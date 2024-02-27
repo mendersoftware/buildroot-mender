@@ -1,0 +1,37 @@
+version: "3.8"
+services:
+   buildroot-mender:
+    build:
+      context: ./
+      args:
+         BUILDROOT_USER: br-user
+         BUILDROOT_DIR: buildroot
+         BUILDROOT_VERSION: git
+         BUILDROOT_BRANCH: master
+         BUILDROOT_COMMIT: 4533e42622e46f2b8e0ce4d1936c6534393d3aa1
+         # Space deliminated list of external trees of which to use.
+         EXTERNAL_TREES: buildroot-external-mender
+         BUILDROOT_PATCH_DIR: "buildroot-external-mender/patches/buildroot/"
+         UID: 1000
+         GID: 1000
+    environment:
+      - APPLY_CONFIGS
+      - CLEAN_AFTER_BUILD
+      - ENV_FILES
+      - EXIT_AFTER_BUILD
+      - NO_BUILD
+      - VERBOSE
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    privileged: true
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./:/mnt
+      - buildroot-mender-ccache:/home/ccache
+    image: buildroot-mender:latest
+    container_name:  buildroot-mender
+volumes:
+  buildroot-mender-ccache:

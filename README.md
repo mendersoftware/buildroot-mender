@@ -2,7 +2,9 @@
 # However, it is under active development!
 #
 #
-# It is recommended you use this repository for the latest mender packagess if you plan on using Mender with your Buildroot system, as the maintainers of Buildroot are slow to respond to pull requests that bump the Mender package versions. Sometimes up to 4+ months. Please check the various branches for a specific Buildroot version, starting with 2023.11.x.
+# It is recommended you use this repository for the latest mender packagess if you plan on using Mender with your Buildroot system, as the maintainers of Buildroot are slow to respond to pull requests that bump the Mender package versions. Sometimes up to 4+ months.
+
+# Buildroot community board integrations for Mender
 
 Mender is an open source over-the-air (OTA) software updater for embedded Linux
 devices. Mender comprises a client running at the embedded device, as well as
@@ -13,29 +15,43 @@ This repository contains Buildroot board integrations for various boards.
 Please check out [https://hub.mender.io](https://hub.mender.io/c/board-integrations/Board-integrations-for-Buildroot) for more information on supported boards and detailed instructions on how to setup the build environment
 to create images.
 
-![Mender logo](https://mender.io/user/pages/resources/06.digital-assets/mender.io.png)
-
 ## Getting started
+
+### Prerequisites:
+  - A computer running Linux
+  - Docker
+  - docker-compose
 
 To start using Mender, we recommend that you begin with the Getting started
 section in [the Mender documentation](https://docs.mender.io/).
 
 ## Quick setup
+  - Clone this repository:
+    - `git clone https://github.com/mendersoftware/buildroot-mender -b 2023.11.x`
+  - Build the docker container:
+    - `make build`
+ - choose the board you want to build by looking in the docker/ directory for .json files. IE: docker/x86_64.json
+ - Start the docker container. The build will start automatically. IE:
+   - `ENV_FILES=x86_64.json make up`
+ - Images are found in `buildroot-external-mender/output/${config_name}/images`
 
-Clone this repository:
+## Currently tested boards:
+  - x86_64
 
-    git clone https://github.com/mendersoftware/buildroot-mender
+## Other notes:
+  - See docker/env.json.readme for env file options.
+  - See `make help` for make file options.
+  - `make shell` will skip building and put you into the docker shell. Navigate to `buildroot-external-mender/output/${config_name}` to build manually.
+  - Board files are found in `buildroot-external-mender/board`
+  - Config files are found in `buildroot-external-mender/configs`
+  - Buildroot patches are found in `buildroot-external-mender/patches/builldroot`
+  - After building x86_64_mender_defconfig run `make x64-run` to start the virtual image. Console is found on the serial port.
+  - All defconfigs build.
 
-Fetch submodules:
-
-    git submodule update --init
-
-These two steps should prepare the Buildroot environment.
-
-To continue setting up the environment for a specific board please read the `readme.txt` for
-respective board, e.g `buildroot-external-mender/board/freescale/imx8mqevk/readme.txt`
 
 ## Contributing
+
+## Please raise an issue if a board does not build or boot!
 
 We welcome and ask for your contribution. If you would like to contribute to
 Mender, please read our guide on how to best get started [contributing code or
