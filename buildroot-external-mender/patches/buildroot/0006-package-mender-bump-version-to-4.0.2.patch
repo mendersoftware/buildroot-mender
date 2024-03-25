@@ -411,7 +411,7 @@ index d563dc534b..b8890434b5 100644
 @@ -1,45 +1,23 @@
  # Locally computed:
 -sha256  8a149b11b990beb7620b372023eec28df63cee6a1aa4132e88ecef554f080f72  mender-3.4.0.tar.gz
-+sha256  909dbadc279b45b00bedd34c0b91c7da5f858838fdeb092038766f855e530a87  mender-584d7966631d0fbde8d7160bad6139c8a88471d6-br1.tar.gz
++sha256  8b2f5221df9e0b3da2073f80e53d03286ff357682931512c0b27dde11cc9e5a0  mender-f8a235be22e08fbcba79f07d7b0e22f8bbf88845-br1.tar.gz
 +sha256  418bdfce185824f861177ce6a0fdeb381bd1d9e0521038c9a636de0b60742fbb  LIC_FILES_CHKSUM.sha256
  
  # Vendor licenses
@@ -478,8 +478,8 @@ index ee1398244b..2a6e29bd07 100644
 -MENDER_VERSION = 3.4.0
 -MENDER_SITE = $(call github,mendersoftware,mender,$(MENDER_VERSION))
 -MENDER_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, OLDAP-2.8
-+# 4.0.1
-+MENDER_VERSION = 584d7966631d0fbde8d7160bad6139c8a88471d6
++# 4.0.2
++MENDER_VERSION = f8a235be22e08fbcba79f07d7b0e22f8bbf88845
 +MENDER_SITE = https://github.com/mendersoftware/mender.git
 +MENDER_SITE_METHOD = git
 +MENDER_GIT_SUBMODULES = YES

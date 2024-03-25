@@ -1,4 +1,3 @@
-version: "3.8"
 services:
    buildroot-mender:
     build:
@@ -8,7 +7,7 @@ services:
          BUILDROOT_DIR: buildroot
          BUILDROOT_VERSION: git
          BUILDROOT_BRANCH: master
-         BUILDROOT_COMMIT: 4533e42622e46f2b8e0ce4d1936c6534393d3aa1
+         BUILDROOT_COMMIT: bb4371d0863a2714e81b81bb2d5bafe18b4b3110
          # Space deliminated list of external trees of which to use.
          EXTERNAL_TREES: buildroot-external-mender
          BUILDROOT_PATCH_DIR: "buildroot-external-mender/patches/buildroot/"
