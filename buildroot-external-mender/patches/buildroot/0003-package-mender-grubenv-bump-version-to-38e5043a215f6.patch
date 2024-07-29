@@ -1,6 +1,6 @@
-From e1572442579e3d81e8ef386d67342dc7772aaee5 Mon Sep 17 00:00:00 2001
+From 2d18a9c7d6a7f291e72b6c507435bc2fed570208 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Thu, 22 Feb 2024 16:41:06 -0700
+Date: Wed, 10 Jul 2024 13:15:18 -0600
 Subject: [PATCH] package/mender-grubenv: bump version to
  38e5043a215f696d126a2d707c9db9aeb93cfb2d
 
@@ -35,7 +35,7 @@ index f27eb09e34..f35562f69e 100644
  	  Contains the boot scripts and tools used by Mender to
  	  integrate with the GRUB bootloader.
 diff --git a/package/mender-grubenv/mender-grubenv.hash b/package/mender-grubenv/mender-grubenv.hash
-index 193bff073b..18e7b56201 100644
+index 193bff073b..d7f784493c 100644
 --- a/package/mender-grubenv/mender-grubenv.hash
 +++ b/package/mender-grubenv/mender-grubenv.hash
 @@ -1,3 +1,3 @@
@@ -45,7 +45,7 @@ index 193bff073b..18e7b56201 100644
 +sha256  0bac59698165a8dafdd282610246addd7bebf41612efa88c77b779f8ffb5ed9d  mender-grubenv-38e5043a215f696d126a2d707c9db9aeb93cfb2d.tar.gz
 +sha256  d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
 diff --git a/package/mender-grubenv/mender-grubenv.mk b/package/mender-grubenv/mender-grubenv.mk
-index 8679ad9236..699d95f3e8 100644
+index 8679ad9236..44af2ee417 100644
 --- a/package/mender-grubenv/mender-grubenv.mk
 +++ b/package/mender-grubenv/mender-grubenv.mk
 @@ -4,14 +4,13 @@
@@ -113,5 +113,5 @@ index 8679ad9236..699d95f3e8 100644
 -
  $(eval $(generic-package))
 -- 
-2.43.2
+2.45.2
 

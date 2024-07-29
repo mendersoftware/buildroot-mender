@@ -1,6 +1,6 @@
-From fbfc4c9271b2534c67a32fcee890d7ec3e92f35b Mon Sep 17 00:00:00 2001
+From d846a72d7bf9418c9cfb930c4bb1ed61c514a46b Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Thu, 22 Feb 2024 16:40:25 -0700
+Date: Wed, 10 Jul 2024 13:13:02 -0600
 Subject: [PATCH] package/mender-connect: bump version to 2.2.1
 
 Update LICENSE sha256sum due to year change
@@ -12,14 +12,14 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  2 files changed, 10 insertions(+), 8 deletions(-)
 
 diff --git a/package/mender-connect/mender-connect.hash b/package/mender-connect/mender-connect.hash
-index da4ec5fbbd..337b39e66c 100644
+index 33ad999180..5f7e082e1b 100644
 --- a/package/mender-connect/mender-connect.hash
 +++ b/package/mender-connect/mender-connect.hash
 @@ -1,17 +1,16 @@
  # Locally computed:
--sha256  96b81bb4c72eb8c1756febb94101c0dea5a6d4884591824e61a5f2509cd9ca9b  mender-connect-2.1.0.tar.gz
+-sha256  96b81bb4c72eb8c1756febb94101c0dea5a6d4884591824e61a5f2509cd9ca9b  mender-connect-2.1.0-go2.tar.gz
 -sha256  78b3954421ec6499c3f9735b96d52288574ae80c747416a52548d7f526f26e8c  LIC_FILES_CHKSUM.sha256
-+sha256  7e83c4cabc090ed26088036c6c68fc8e73546fa4a75db817f676dc8b1e8a3c8f  mender-connect-2.2.1.tar.gz
++sha256  7e83c4cabc090ed26088036c6c68fc8e73546fa4a75db817f676dc8b1e8a3c8f  mender-connect-2.2.1-go2.tar.gz
 +sha256  c57e1178f932015d7f08b4d76c4b18e4a55083a6fbc97629cd25ef426bf1db30  LIC_FILES_CHKSUM.sha256
  
  # Vendor licenses
@@ -78,5 +78,5 @@ index 36ddd5f7db..02c776892e 100644
  	vendor/github.com/creack/pty/LICENSE \
  	vendor/github.com/go-ozzo/ozzo-validation/v4/LICENSE \
 -- 
-2.43.2
+2.45.2
 

@@ -16,10 +16,10 @@ BR2_SYSTEM_DEFAULT_PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 BR2_ROOTFS_OVERLAY="buildroot-external-mender/board/common/overlay buildroot-external-mender/board/beaglebone/overlay"
 BR2_ROOTFS_POST_BUILD_SCRIPT="buildroot-external-mender/board/beaglebone/post-build.sh"
 BR2_ROOTFS_POST_IMAGE_SCRIPT="buildroot-external-mender/board/beaglebone/post-image.sh"
-BR2_ROOTFS_POST_SCRIPT_ARGS="--artifact-name=2023.11.1 --data-part-size=128M --generate-mender-image=true --device-type=beaglebone"
+BR2_ROOTFS_POST_SCRIPT_ARGS="--artifact-name=2024.05-345-g39d23ce823-dirty --data-part-size=128M --generate-mender-image=true --device-type=beaglebone"
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
-BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,beagleboard,linux,6.1.69-ti-r22)/linux-6.1.69-ti-r22.tar.gz"
+BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,beagleboard,linux,6.6.32-ti-arm32-r7)/linux-6.6.32-ti-arm32-r7.tar.gz"
 BR2_LINUX_KERNEL_DEFCONFIG="omap2plus"
 BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="buildroot-external-mender/configs/fragments/linux/beaglebone.fragment"
 BR2_LINUX_KERNEL_DTS_SUPPORT=y
@@ -35,6 +35,12 @@ BR2_PACKAGE_PARTED=y
 BR2_PACKAGE_UBOOT_TOOLS=y
 BR2_PACKAGE_LIBGLIB2=y
 BR2_PACKAGE_MENDER=y
+BR2_PACKAGE_MENDER_IDENTITY_SCRIPTS=y
+BR2_PACKAGE_MENDER_INVENTORY_SCRIPTS=y
+BR2_PACKAGE_MENDER_INVENTORY_NETWORK_SCRIPTS=y
+BR2_PACKAGE_MENDER_MODULES=y
+BR2_PACKAGE_MENDER_MODULES_GEN=y
+BR2_PACKAGE_MENDER_AUTH=y
 BR2_PACKAGE_MENDER_CONNECT=y
 BR2_TARGET_ROOTFS_EXT2=y
 BR2_TARGET_ROOTFS_EXT2_4=y

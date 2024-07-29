@@ -1,6 +1,6 @@
-From 05f3acdc0e1b0720005f0d65ef7dda3fa6f3562e Mon Sep 17 00:00:00 2001
+From b1bb0dddf2dd898a6ff9771faaf76de67177f1fc Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Thu, 22 Feb 2024 16:38:39 -0700
+Date: Wed, 10 Jul 2024 13:13:55 -0600
 Subject: [PATCH] package/mender-artifact: bump version to 3.11.2
 
 mender-artifact now explicitly depends on host-openssl and uses host-pkgconf
@@ -56,9 +56,9 @@ index 8262e26bf0..84e733d897 100644
 +++ b/package/mender-artifact/mender-artifact.hash
 @@ -1,6 +1,6 @@
  # Locally computed:
--sha256  d3ed68d8637195ff35de97b12c8fa148cebffb1ee0fd0d43909ec1643c0c296a  mender-artifact-3.8.0.tar.gz
+-sha256  d3ed68d8637195ff35de97b12c8fa148cebffb1ee0fd0d43909ec1643c0c296a  mender-artifact-3.8.0-go2.tar.gz
 -sha256  b8462a14975e30fb0dff14ed50e7563e833ccce13c2aa93f95386ffe877ed673  LIC_FILES_CHKSUM.sha256
-+sha256  3fc2d45bedf28843f84c4b8fcc6a9592e1dc176fc91123d99a5172935d7c78a0  mender-artifact-3.11.2.tar.gz
++sha256  3fc2d45bedf28843f84c4b8fcc6a9592e1dc176fc91123d99a5172935d7c78a0  mender-artifact-3.11.2-go2.tar.gz
 +sha256  8c41e20f891ae04abd2d32367248eaf33e1bd2f1328789ab60b8b0d10cc414a1  LIC_FILES_CHKSUM.sha256
  
  # License hash extracted from LIC_FILES_CHKSUM.sha256 using the
@@ -264,5 +264,5 @@ index 6ade624a23..68e3ca3f1a 100644
  HOST_MENDER_ARTIFACT_LDFLAGS = -X github.com/mendersoftware/mender-artifact/cli.Version=$(HOST_MENDER_ARTIFACT_VERSION)
  
 -- 
-2.43.2
+2.45.2
 

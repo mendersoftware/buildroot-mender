@@ -98,7 +98,7 @@ RUN /bin/bash; \
   chown -R ${BUILDROOT_USER}:${BUILDROOT_USER} /home/${BUILDROOT_USER}; \
   if [ $BUILDROOT_VERSION = "git" ]; then \
     echo "Cloning Buildroot on branch ${BUILDROOT_BRANCH}"; \
-    git clone git://git.buildroot.net/buildroot /home/${BUILDROOT_USER}/buildroot -b ${BUILDROOT_BRANCH}; \
+    git clone https://gitlab.com/buildroot.org/buildroot.git /home/${BUILDROOT_USER}/buildroot -b ${BUILDROOT_BRANCH}; \
     if [ -n $BUILDROOT_COMMIT ]; then \
       cd /home/${BUILDROOT_USER}/buildroot; \
       git checkout ${BUILDROOT_COMMIT}; \

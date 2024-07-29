@@ -13,7 +13,7 @@ generate_image() {
   sed "s/DISK_IMG/${DEVICE_TYPE}.img/g" -i "${BINARIES_DIR}/genimage.cfg"
   sed "s/UUID_ROOT_TMP/${UUID_ROOT}/g" -i "${BINARIES_DIR}/efi-part/EFI/BOOT/grub.cfg"
   sed "s/UUID_DATA_TMP/${UUID_DATA}/g" -i "${BINARIES_DIR}/genimage.cfg"
-  sh support/scripts/genimage.sh -c "${BINARIES_DIR}"/genimage.cfg
+  bash support/scripts/genimage.sh -c "${BINARIES_DIR}"/genimage.cfg
 }
 
 
@@ -28,7 +28,7 @@ main(){
   make_data_partition "64bit"
   generate_image
   generate_mender_image
-  # copy_image
+  copy_image
   exit $?
 }
 main "${@}"

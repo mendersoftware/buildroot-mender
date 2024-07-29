@@ -1,5 +1,4 @@
 menu "external packages"
-source "$BR2_EXTERNAL_MENDER_PATH/package/lmdb/Config.in"
 source "$BR2_EXTERNAL_MENDER_PATH/package/mender-app-update-module/Config.in"
 source "$BR2_EXTERNAL_MENDER_PATH/package/mender-configure-module/Config.in"
 source "$BR2_EXTERNAL_MENDER_PATH/package/mender-flash/Config.in"
