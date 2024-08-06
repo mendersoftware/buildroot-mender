@@ -130,6 +130,11 @@ comment "rootfs version check needs a toolchain w/ wchar, threads, dynamic libra
 
 config BR2_PACKAGE_MENDER_UPDATE_MODULES_SWU
 	bool "swupdate"
+	depends on !BR2_STATIC_LIBS
+	depends on BR2_USE_MMU # swupdate
+	depends on BR2_TOOLCHAIN_HAS_SYNC_4 # swupdate
+	select BR2_PACKAGE_JQ
+	select BR2_PACKAGE_SWUPDATE
 	help
 	  The SWU Update Module allows deploying an SWUpdate-based
 	  artifact to the device.
@@ -138,6 +143,11 @@ config BR2_PACKAGE_MENDER_UPDATE_MODULES_SWU
 	    - Extend an existing platform using SWUpdate with OTA.
 
 	  https://github.com/mendersoftware/mender-update-modules/tree/master/swu
+
+comment "swupdate support needs a toolchain w/ dynamic library"
+        depends on BR2_USE_MMU
+        depends on BR2_TOOLCHAIN_HAS_SYNC_4
+        depends on BR2_STATIC_LIBS
 
 endif
 
