@@ -1,36 +1,37 @@
-From 2d18a9c7d6a7f291e72b6c507435bc2fed570208 Mon Sep 17 00:00:00 2001
+From ba33ca7bd96b6f836d6e2c09d5855acd0467e8c0 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 10 Jul 2024 13:15:18 -0600
-Subject: [PATCH] package/mender-grubenv: bump version to
+Date: Wed, 4 Sep 2024 11:25:21 +0200
+Subject: [PATCH v2 3/5] package/mender-grubenv: bump version to
  38e5043a215f696d126a2d707c9db9aeb93cfb2d
 
-Mender grubenv now expects bios installs to be in boot/grub-mender-grubenv
-instead of boot/grub/grub-mender-grubenv.
+Commit 174bf40fb520893a5ef69ef02c22aa232b56bd67 introduced the usage of
+`flock -w` to prevent errors during concurrent access of the environment
+(IE: When a process is editing an env and another is trying to restore it.)
 
-Also, update the LICENSE hash as the year has been updated to 2023.
+As such, mender-grubenv now requires util-linux and the basic binaries
+set, as the busybox flock does not provide the -w argument.
+
+Other changes:
+  - The boot directory is now expected to be /boot instead of /boot/grub
+  - License hash changed for 2023 -> 2024 year date (see commit f54ecfb)
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
- package/mender-grubenv/Config.in           |  4 ++++
- package/mender-grubenv/mender-grubenv.hash |  4 ++--
- package/mender-grubenv/mender-grubenv.mk   | 20 ++++++++------------
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ package/mender-grubenv/Config.in           | 2 ++
+ package/mender-grubenv/mender-grubenv.hash | 4 ++--
+ package/mender-grubenv/mender-grubenv.mk   | 8 ++++----
+ 3 files changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/package/mender-grubenv/Config.in b/package/mender-grubenv/Config.in
-index f27eb09e34..f35562f69e 100644
+index f27eb09e34..8505458793 100644
 --- a/package/mender-grubenv/Config.in
 +++ b/package/mender-grubenv/Config.in
-@@ -1,9 +1,13 @@
- config BR2_PACKAGE_MENDER_GRUBENV
- 	bool "mender-grubenv"
- 	depends on BR2_TARGET_GRUB2_ARCH_SUPPORTS
-+	depends on BR2_USE_WCHAR # coreutils
-+	depends on BR2_USE_MMU # coreutils
-+	depends on BR2_PACKAGE_BUSYBOX_SHOW_OTHERS # coreutils
+@@ -4,6 +4,8 @@ config BR2_PACKAGE_MENDER_GRUBENV
  	depends on BR2_PACKAGE_MENDER # runtime
  	depends on BR2_TARGET_GRUB2
  	depends on !(BR2_TARGET_GRUB2_HAS_LEGACY_BOOT && BR2_TARGET_GRUB2_HAS_EFI_BOOT)
-+	select BR2_PACKAGE_COREUTILS # sync
++	select BR2_PACKAGE_UTIL_LINUX
++	select BR2_PACKAGE_UTIL_LINUX_BINARIES # flock -w
  	help
  	  Contains the boot scripts and tools used by Mender to
  	  integrate with the GRUB bootloader.
@@ -45,10 +46,10 @@ index 193bff073b..d7f784493c 100644
 +sha256  0bac59698165a8dafdd282610246addd7bebf41612efa88c77b779f8ffb5ed9d  mender-grubenv-38e5043a215f696d126a2d707c9db9aeb93cfb2d.tar.gz
 +sha256  d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
 diff --git a/package/mender-grubenv/mender-grubenv.mk b/package/mender-grubenv/mender-grubenv.mk
-index 8679ad9236..44af2ee417 100644
+index a6d8d48d43..a47531fe58 100644
 --- a/package/mender-grubenv/mender-grubenv.mk
 +++ b/package/mender-grubenv/mender-grubenv.mk
-@@ -4,14 +4,13 @@
+@@ -4,13 +4,13 @@
  #
  ################################################################################
  
@@ -60,12 +61,11 @@ index 8679ad9236..44af2ee417 100644
  # Grub2 must be built first so this package can overwrite the config files
  # provided by grub.
 -MENDER_GRUBENV_DEPENDENCIES = grub2
--MENDER_GRUBENV_INSTALL_IMAGES = YES
-+MENDER_GRUBENV_DEPENDENCIES = coreutils grub2
++MENDER_GRUBENV_DEPENDENCIES = grub2 util-linux
  
  MENDER_GRUBENV_MAKE_ENV = \
  	$(TARGET_CONFIGURE_OPTS) \
-@@ -30,16 +29,17 @@ MENDER_GRUBENV_MODULES_MISSING_PC = \
+@@ -29,14 +29,14 @@ MENDER_GRUBENV_MODULES_MISSING_PC = \
  	$(filter-out $(call qstrip,$(BR2_TARGET_GRUB2_BUILTIN_MODULES_PC)),\
  		$(MENDER_GRUBENV_MANDATORY_MODULES))
  
@@ -74,44 +74,14 @@ index 8679ad9236..44af2ee417 100644
  
  define MENDER_GRUBENV_INSTALL_I386_CFG
  	mkdir -p $(BINARIES_DIR)/boot-part/grub
--	cp -dpfr $(@D)/mender_grub.cfg \
-+	cp -dpfr $(MENDER_GRUBENV_BUILDDIR)/mender_grub.cfg \
+ 	cp -dpfr $(MENDER_GRUBENV_BUILDDIR)/mender_grub.cfg \
  		$(TARGET_DIR)/boot/grub/grub.cfg
  	cp -dpfr $(TARGET_DIR)/boot/grub/grub.cfg \
 -		$(TARGET_DIR)/boot/grub/grub-mender-grubenv \
 +		$(TARGET_DIR)/boot/grub-mender-grubenv \
  		$(BINARIES_DIR)/boot-part/
  endef
-+MENDER_GRUBENV_TARGET_FINALIZE_HOOKS += MENDER_GRUBENV_INSTALL_I386_CFG
- endif # BR2_TARGET_GRUB2_HAS_LEGACY_BOOT
- 
- ifeq ($(BR2_TARGET_GRUB2_HAS_EFI_BOOT),y)
-@@ -51,13 +51,14 @@ MENDER_GRUBENV_MAKE_ENV += BOOT_DIR=/boot/EFI/BOOT
- 
- define MENDER_GRUBENV_INSTALL_EFI_CFG
- 	mkdir -p $(BINARIES_DIR)/efi-part/EFI/BOOT
--	cp -dpfr $(@D)/mender_grub.cfg \
-+	cp -dpfr $(MENDER_GRUBENV_BUILDDIR)/mender_grub.cfg \
- 		$(TARGET_DIR)/boot/EFI/BOOT/grub.cfg
- 	cp -dpfr $(TARGET_DIR)/boot/EFI/BOOT/grub.cfg \
- 		$(BINARIES_DIR)/efi-part/EFI/BOOT
- 	cp -dpfr $(TARGET_DIR)/boot/EFI/BOOT/grub-mender-grubenv \
- 		$(BINARIES_DIR)/efi-part/
- endef
-+MENDER_GRUBENV_TARGET_FINALIZE_HOOKS += MENDER_GRUBENV_INSTALL_EFI_CFG
- endif # BR2_TARGET_GRUB2_HAS_EFI_BOOT
- 
- ifeq ($(BR2_PACKAGE_MENDER_GRUBENV)$(BR_BUILDING),yy)
-@@ -86,9 +87,4 @@ define MENDER_GRUBENV_INSTALL_TARGET_CMDS
- 	echo 'ENV_DIR=/boot/grub-mender-grubenv' > $(TARGET_DIR)/etc/mender_grubenv.config
- endef
- 
--define MENDER_GRUBENV_INSTALL_IMAGES_CMDS
--	$(MENDER_GRUBENV_INSTALL_I386_CFG)
--	$(MENDER_GRUBENV_INSTALL_EFI_CFG)
--endef
--
- $(eval $(generic-package))
+ MENDER_GRUBENV_TARGET_FINALIZE_HOOKS += MENDER_GRUBENV_INSTALL_I386_CFG
 -- 
-2.45.2
+2.46.0
 
