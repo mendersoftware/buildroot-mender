@@ -1,15 +1,28 @@
-From d846a72d7bf9418c9cfb930c4bb1ed61c514a46b Mon Sep 17 00:00:00 2001
+From a1853a8eb67959846a1d7e195df9e68e3efcff51 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 10 Jul 2024 13:13:02 -0600
-Subject: [PATCH] package/mender-connect: bump version to 2.2.1
+Date: Wed, 4 Sep 2024 11:51:29 +0200
+Subject: [PATCH v2 5/5] package/mender-connect: bump version to 2.2.1
 
-Update LICENSE sha256sum due to year change
+License changes:
+New:
+  BSD-3-Clause:
+    vendor/golang.org/x/net/LICENSE
+    vendor/github.com/gorilla/websocket/LICENSE
+
+Removed:
+  BSD-2-Clause:
+    vendor/github.com/gorilla/websocket/LICENSE
+
+Modified:
+  Apache-2.0
+    LICENSE (Year change)
+    vendor/github.com/mendersoftware/go-lib-micro/LICENSE
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
  package/mender-connect/mender-connect.hash | 11 ++++++-----
- package/mender-connect/mender-connect.mk   |  7 ++++---
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ package/mender-connect/mender-connect.mk   |  5 +++--
+ 2 files changed, 9 insertions(+), 7 deletions(-)
 
 diff --git a/package/mender-connect/mender-connect.hash b/package/mender-connect/mender-connect.hash
 index 33ad999180..5f7e082e1b 100644
@@ -47,10 +60,10 @@ index 33ad999180..5f7e082e1b 100644
  # ISC
  sha256  1b93a317849ee09d3d7e4f1d20c2b78ddb230b4becb12d7c224c927b9d470251  vendor/github.com/davecgh/go-spew/LICENSE
 diff --git a/package/mender-connect/mender-connect.mk b/package/mender-connect/mender-connect.mk
-index 36ddd5f7db..02c776892e 100644
+index 36ddd5f7db..f4f7e0f195 100644
 --- a/package/mender-connect/mender-connect.mk
 +++ b/package/mender-connect/mender-connect.mk
-@@ -4,22 +4,23 @@
+@@ -4,7 +4,7 @@
  #
  ################################################################################
  
@@ -59,12 +72,9 @@ index 36ddd5f7db..02c776892e 100644
  MENDER_CONNECT_SITE = $(call github,mendersoftware,mender-connect,$(MENDER_CONNECT_VERSION))
  MENDER_CONNECT_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT
  
- # Vendor license paths generated with:
- #    awk '{print $2}' LIC_FILES_CHKSUM.sha256 | grep vendor
- MENDER_CONNECT_LICENSE_FILES = \
--	LIC_FILES_CHKSUM.sha256 \
+@@ -14,12 +14,13 @@ MENDER_CONNECT_LICENSE_FILES = \
+ 	LIC_FILES_CHKSUM.sha256 \
  	LICENSE \
-+	LIC_FILES_CHKSUM.sha256 \
  	vendor/github.com/mendersoftware/go-lib-micro/LICENSE \
 -	vendor/github.com/gorilla/websocket/LICENSE \
  	vendor/github.com/pkg/errors/LICENSE \
@@ -78,5 +88,5 @@ index 36ddd5f7db..02c776892e 100644
  	vendor/github.com/creack/pty/LICENSE \
  	vendor/github.com/go-ozzo/ozzo-validation/v4/LICENSE \
 -- 
-2.45.2
+2.46.0
 

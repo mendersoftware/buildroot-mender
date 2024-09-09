@@ -1,49 +1,67 @@
-From b1bb0dddf2dd898a6ff9771faaf76de67177f1fc Mon Sep 17 00:00:00 2001
+From 0030a43256736c4d741b40f60f7da9a1e9d98f4b Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 10 Jul 2024 13:13:55 -0600
-Subject: [PATCH] package/mender-artifact: bump version to 3.11.2
+Date: Wed, 4 Sep 2024 11:46:37 +0200
+Subject: [PATCH v2 4/5] package/mender-artifact: bump version to 3.11.2
 
 mender-artifact now explicitly depends on host-openssl and uses host-pkgconf
 to find the correct libraries.
-
-As suggested by Thomas in this previous patcch:
-https://patchwork.ozlabs.org/project/buildroot/patch/20221005212150.1384370-3-aduskett@gmail.com/
 
 Use the same variables as defined in HOST_MAKE_ENV (in package/Makefile.in) for
 HOST_MENDER_ARTIFACT_GO_ENV.
 
 The updated mender-artifact package introduces the write bootstrap-artifact
-argument which is needed for 3.5.1.
+argument which is needed for mender versions >= 3.5.1.
 
 License changes:
 New:
-  Apache 2.0
-  vendor/github.com/mendersoftware/openssl/LICENSE
-  vendor/github.com/googleapis/enterprise-certificate-proxy/LICENSE
-
-  BSD-3:
-  vendor/golang.org/x/crypto/LICENSE
-  vendor/golang.org/x/time/LICENSE
-  vendor/github.com/klauspost/compress/internal/snapref/LICENSE
-
-  MIT:
-  vendor/github.com/klauspost/compress/zstd/internal/xxhash/LICENSE.txt
-
-  MPL-2.0:
-  vendor/github.com/hashicorp/go-secure-stdlib/mlock/LICENSE
+  Apache 2.0:
+    vendor/google.golang.org/genproto/googleapis/api/LICENSE
+    vendor/google.golang.org/genproto/googleapis/rpc/LICENSE
+    vendor/cloud.google.com/go/compute/metadata/LICENSE
 
 Removed:
-  vendor/cloud.google.com/go/LICENSE
-  vendor/github.com/shurcooL/sanitized_anchor_name/LICENSE
+  Apache 2.0:
+    vendor/cloud.google.com/go/LICENSE
+
+  MIT:
+    vendor/github.com/shurcooL/sanitized_anchor_name/LICENSE
+    vendor/go.uber.org/atomic/LICENSE.txt
+    vendor/github.com/mitchellh/go-testing-interface/LICENSE
+    vendor/github.com/mitchellh/copystructure/LICENSE
+    vendor/github.com/mitchellh/reflectwalk/LICENSE
+    vendor/github.com/mattn/go-colorable/LICENSE
+    vendor/github.com/fatih/color/LICENSE.md
+    vendor/github.com/armon/go-radix/LICENSE
+    vendor/github.com/armon/go-metrics/LICENSE
+
+  MPL-2.0:
+    vendor/github.com/hashicorp/go-version/LICENSE
+    vendor/github.com/hashicorp/go-uuid/LICENSE
+    vendor/github.com/hashicorp/go-plugin/LICENSE
+    vendor/github.com/hashicorp/golang-lru/LICENSE
 
 Modified:
-  LIC_FILES_CHKSUM.sha256: Sum of all licenses changed
-  LICENSE: Update year from 2022 to 2023
-  vendor/github.com/urfave/cli/LICENSE: Update year from 2016 to 2023
-  vendor/github.com/hashicorp/vault/sdk/LICENSE
-    - Add missing Copyright (c) 2015 HashiCorp, Inc.
-  vendor/github.com/hashicorp/vault/api/LICENSE
-    - Add missing Copyright (c) 2015 HashiCorp, Inc.
+
+  Apache 2.0:
+    vendor/gopkg.in/square/go-jose.v2/LICENSE
+    vendor/github.com/oklog/run/LICENSE
+
+  BSD 3 Clause:
+    vendor/github.com/golang/snappy/LICENSE
+    vendor/gopkg.in/square/go-jose.v2/json/LICENSE
+    vendor/github.com/pierrec/lz4/LICENSE
+
+  MIT:
+    vendor/github.com/urfave/cli/LICENSE
+    vendor/github.com/klauspost/pgzip/LICENSE
+    vendor/github.com/hashicorp/go-hclog/LICENSE
+
+  MPL-2.0:
+    vendor/github.com/hashicorp/vault/sdk/LICENSE
+    vendor/github.com/hashicorp/vault/api/LICENSE
+    vendor/github.com/hashicorp/yamux/LICENSE
+    vendor/github.com/hashicorp/go-immutable-radix/LICENSE
+
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
  package/mender-artifact/mender-artifact.hash | 48 +++++++----------
@@ -51,7 +69,7 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  2 files changed, 46 insertions(+), 56 deletions(-)
 
 diff --git a/package/mender-artifact/mender-artifact.hash b/package/mender-artifact/mender-artifact.hash
-index 8262e26bf0..84e733d897 100644
+index 9d77f068e2..e87d52fa72 100644
 --- a/package/mender-artifact/mender-artifact.hash
 +++ b/package/mender-artifact/mender-artifact.hash
 @@ -1,6 +1,6 @@
@@ -155,7 +173,7 @@ index 8262e26bf0..84e733d897 100644
  sha256  a830016911a348a54e89bd54f2f8b0d8fffdeac20aecfba8e36ebbf38a03f5ff  vendor/github.com/hashicorp/go-multierror/LICENSE
 -sha256  af175b9d96ee93c21a036152e1b905b0b95304d4ae8c2c921c7609100ba8df7e  vendor/github.com/hashicorp/golang-lru/LICENSE
 diff --git a/package/mender-artifact/mender-artifact.mk b/package/mender-artifact/mender-artifact.mk
-index 6ade624a23..68e3ca3f1a 100644
+index 6ade624a23..399c194c99 100644
 --- a/package/mender-artifact/mender-artifact.mk
 +++ b/package/mender-artifact/mender-artifact.mk
 @@ -4,7 +4,7 @@
@@ -264,5 +282,5 @@ index 6ade624a23..68e3ca3f1a 100644
  HOST_MENDER_ARTIFACT_LDFLAGS = -X github.com/mendersoftware/mender-artifact/cli.Version=$(HOST_MENDER_ARTIFACT_VERSION)
  
 -- 
-2.45.2
+2.46.0
 

@@ -1,0 +1,38 @@
+From a9d5efb69e0c3b0383ef2b1e7c18a1ff81e4bebe Mon Sep 17 00:00:00 2001
+From: Adam Duskett <adam.duskett@amarulasolutions.com>
+Date: Mon, 9 Sep 2024 12:36:44 +0000
+Subject: [PATCH 2/3] configs/mender_x86_64_efi_defconfig: Update kernel to
+ 6.6.50
+
+Update the kernel to the latest 6.6 LTS version
+
+Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
+---
+ configs/mender_x86_64_efi_defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configs/mender_x86_64_efi_defconfig b/configs/mender_x86_64_efi_defconfig
+index 25a463abb3..b2b30af832 100644
+--- a/configs/mender_x86_64_efi_defconfig
++++ b/configs/mender_x86_64_efi_defconfig
+@@ -2,7 +2,7 @@
+ BR2_x86_64=y
+ 
+ # Toolchain
+-BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_18=y
++BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6=y
+ 
+ # System
+ BR2_TARGET_GENERIC_GETTY_PORT="ttyS0"
+@@ -39,7 +39,7 @@ BR2_ROOTFS_POST_SCRIPT_ARGS="--data-part-size=32M --device-type=buildroot-x86_64
+ # Kernel
+ BR2_LINUX_KERNEL=y
+ BR2_LINUX_KERNEL_CUSTOM_VERSION=y
+-BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="5.18.14"
++BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.6.50"
+ BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
+ BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="board/mender/x86_64/linux.config"
+ BR2_LINUX_KERNEL_INSTALL_TARGET=y
+-- 
+2.46.0
+
