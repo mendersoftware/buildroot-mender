@@ -1,7 +1,7 @@
-From ac7db44532f006748e86fa27879fe1c8a3945f7c Mon Sep 17 00:00:00 2001
+From 68653e684db53082f6aa663429184581166e9a88 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Mon, 9 Sep 2024 12:27:59 +0000
-Subject: [PATCH] package/mender: bump package version to 4.0.4
+Date: Wed, 11 Sep 2024 13:02:35 +0200
+Subject: [PATCH 8/8] package/mender: bump package version to 4.0.4
 
 A complete rewrite of the package, as it is now a cmake package.
 
@@ -32,7 +32,6 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  board/mender/x86_64/post-build.sh             |  10 +-
  board/mender/x86_64/post-image-efi.sh         |  30 ++-
  configs/mender_x86_64_efi_defconfig           |   6 +-
- ...ptional-dynamic-linking-to-boost-log.patch |  36 ++++
  package/mender/Config.in                      | 133 ++++++++++--
  package/mender/S42mender                      |  60 ------
  package/mender/artifact_info                  |   1 -
@@ -46,13 +45,12 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  package/mender/mender-client.service          |  24 ---
  package/mender/mender.conf                    |   1 +
  package/mender/mender.hash                    |  48 ++---
- package/mender/mender.mk                      | 198 ++++++++++--------
+ package/mender/mender.mk                      | 196 ++++++++++--------
  package/mender/readme.txt                     |   7 +-
  support/testing/tests/package/test_mender.py  |  46 ++--
  .../tests/package/test_mender/post-build.sh   |  30 +++
  .../rootfs-overlay/etc/mender/mender.conf     |  11 +
- 23 files changed, 508 insertions(+), 242 deletions(-)
- create mode 100644 package/mender/0001-add-optional-dynamic-linking-to-boost-log.patch
+ 22 files changed, 470 insertions(+), 242 deletions(-)
  delete mode 100644 package/mender/S42mender
  delete mode 100644 package/mender/artifact_info
  delete mode 100644 package/mender/device_type
@@ -197,48 +195,6 @@ index b2b30af832..7c1064b98a 100644
  # BR2_TARGET_ROOTFS_TAR is not set
  BR2_ROOTFS_OVERLAY="board/mender/x86_64/overlay"
  BR2_ROOTFS_POST_BUILD_SCRIPT="board/mender/x86_64/post-build.sh"
-diff --git a/package/mender/0001-add-optional-dynamic-linking-to-boost-log.patch b/package/mender/0001-add-optional-dynamic-linking-to-boost-log.patch
-new file mode 100644
-index 0000000000..cba65eeb98
---- /dev/null
-+++ b/package/mender/0001-add-optional-dynamic-linking-to-boost-log.patch
-@@ -0,0 +1,36 @@
-+From 9b2d4ca5aaacddc23032c33f56cd3d2d86aaefb7 Mon Sep 17 00:00:00 2001
-+From: Adam Duskett <adam.duskett@amarulasolutions.com>
-+Date: Mon, 9 Sep 2024 08:17:03 +0000
-+Subject: [PATCH] add optional dynamic linking to boost::log
-+
-+When building boost as a dynamic library, during linking, hundreds of
-+`undefined reference to `boost::log` errors occure. As the default behavior
-+currently is to statically link against boost::log, it is best to add a new
-+option that explicitly enables dynamically linking to boost::log. This new
-+option is called MENDER_USE_DYNAMIC_BOOST_LOG.
-+
-+Upstream: https://github.com/mendersoftware/mender/pull/1663
-+
-+Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
-+---
-+ cmake/boost.cmake | 4 ++++
-+ 1 file changed, 4 insertions(+)
-+
-+diff --git a/cmake/boost.cmake b/cmake/boost.cmake
-+index dfa02f2..aae1957 100644
-+--- a/cmake/boost.cmake
-++++ b/cmake/boost.cmake
-+@@ -3,6 +3,10 @@
-+ find_package(Boost 1.74 COMPONENTS log)
-+ 
-+ option(MENDER_DOWNLOAD_BOOST "Download Boost if it is not found (Default: OFF)" OFF)
-++option(MENDER_USE_DYNAMIC_BOOST_LOG "Link dynamically to boost::log  (Default: OFF)" OFF)
-++if(MENDER_USE_DYNAMIC_BOOST_LOG)
-++  ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
-++endif()
-+ 
-+ if(NOT MENDER_DOWNLOAD_BOOST AND NOT ${Boost_FOUND})
-+   message(FATAL_ERROR
-+-- 
-+2.46.0
-+
 diff --git a/package/mender/Config.in b/package/mender/Config.in
 index c9b9d0b757..faa7d10473 100644
 --- a/package/mender/Config.in
@@ -731,10 +687,10 @@ index 118cce9d02..afb4f75350 100644
 +# Boost Software License
 +sha256  c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566  vendor/optional-lite/LICENSE.txt
 diff --git a/package/mender/mender.mk b/package/mender/mender.mk
-index ee1398244b..81f43f6d37 100644
+index ee1398244b..6d7c8c2bbf 100644
 --- a/package/mender/mender.mk
 +++ b/package/mender/mender.mk
-@@ -4,112 +4,140 @@
+@@ -4,112 +4,138 @@
  #
  ################################################################################
  
@@ -835,8 +791,6 @@ index ee1398244b..81f43f6d37 100644
 +	mender-systemd-growfs-data.service \
 +	mender-systemd-machine-id.service\
 +	mender-set-systemd-machine-id.sh
-+
-+MENDER_CONF_OPTS = -DMENDER_USE_DYNAMIC_BOOST_LOG=ON
 +
 +ifeq ($(BR2_PACKAGE_DBUS_BROKER),y)
 +MENDER_DEPENDENCIES += dbus-broker

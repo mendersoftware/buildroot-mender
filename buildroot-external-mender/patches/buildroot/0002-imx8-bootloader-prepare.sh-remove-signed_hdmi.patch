@@ -1,17 +1,17 @@
-From f8fe61188c168f7749d59d036396f1c95d97478f Mon Sep 17 00:00:00 2001
-From: Adam Duskett <aduskett@gmail.com>
-Date: Thu, 8 Feb 2024 17:56:52 +0100
-Subject: [PATCH] imx8-bootloader-prepare.sh: remove signed_hdmi
+From c3953c0bd14f895773db9ded4fe5d2f5a939348e Mon Sep 17 00:00:00 2001
+From: Adam Duskett <adam.duskett@amarulasolutions.com>
+Date: Wed, 11 Sep 2024 12:58:24 +0200
+Subject: [PATCH 2/8] imx8-bootloader-prepare.sh: remove signed_hdmi
 
 Later versions of ATF do not include the signed_hdmi.bin file.
 
-Signed-off-by: Adam Duskett <aduskett@gmail.com>
+Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
  board/freescale/common/imx/imx8-bootloader-prepare.sh | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/board/freescale/common/imx/imx8-bootloader-prepare.sh b/board/freescale/common/imx/imx8-bootloader-prepare.sh
-index 7ebf15b6ff..5253a2ff97 100755
+index 0f5dff674f..f7c6988c09 100755
 --- a/board/freescale/common/imx/imx8-bootloader-prepare.sh
 +++ b/board/freescale/common/imx/imx8-bootloader-prepare.sh
 @@ -21,7 +21,7 @@ main ()
@@ -24,5 +24,5 @@ index 7ebf15b6ff..5253a2ff97 100755
  		dd if=${BINARIES_DIR}/u-boot-spl.bin of=${BINARIES_DIR}/u-boot-spl-padded.bin bs=4 conv=sync
  		cat ${BINARIES_DIR}/u-boot-spl-padded.bin ${BINARIES_DIR}/ddr_fw.bin > ${BINARIES_DIR}/u-boot-spl-ddr.bin
 -- 
-2.43.0
+2.46.0
 

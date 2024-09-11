@@ -1,7 +1,7 @@
-From 0030a43256736c4d741b40f60f7da9a1e9d98f4b Mon Sep 17 00:00:00 2001
+From e35430d54d6d77089fb8fa79147653cecdd49775 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 4 Sep 2024 11:46:37 +0200
-Subject: [PATCH v2 4/5] package/mender-artifact: bump version to 3.11.2
+Date: Wed, 11 Sep 2024 13:00:40 +0200
+Subject: [PATCH 5/8] package/mender-artifact: bump version to 3.11.2
 
 mender-artifact now explicitly depends on host-openssl and uses host-pkgconf
 to find the correct libraries.

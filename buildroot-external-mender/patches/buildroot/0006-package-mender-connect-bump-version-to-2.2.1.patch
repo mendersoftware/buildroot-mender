@@ -1,7 +1,7 @@
-From a1853a8eb67959846a1d7e195df9e68e3efcff51 Mon Sep 17 00:00:00 2001
+From fba07cb8ad99239fa5bcb2e854edb95f6b2ec9a8 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 4 Sep 2024 11:51:29 +0200
-Subject: [PATCH v2 5/5] package/mender-connect: bump version to 2.2.1
+Date: Wed, 11 Sep 2024 13:01:04 +0200
+Subject: [PATCH 6/8] package/mender-connect: bump version to 2.2.1
 
 License changes:
 New:
@@ -17,7 +17,6 @@ Modified:
   Apache-2.0
     LICENSE (Year change)
     vendor/github.com/mendersoftware/go-lib-micro/LICENSE
-
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
  package/mender-connect/mender-connect.hash | 11 ++++++-----

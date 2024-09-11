@@ -1,7 +1,7 @@
-From ba33ca7bd96b6f836d6e2c09d5855acd0467e8c0 Mon Sep 17 00:00:00 2001
+From 103feea9cc932ef6ee370be784387e47d933d190 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 4 Sep 2024 11:25:21 +0200
-Subject: [PATCH v2 3/5] package/mender-grubenv: bump version to
+Date: Wed, 11 Sep 2024 13:00:03 +0200
+Subject: [PATCH 4/8] package/mender-grubenv: bump version to
  38e5043a215f696d126a2d707c9db9aeb93cfb2d
 
 Commit 174bf40fb520893a5ef69ef02c22aa232b56bd67 introduced the usage of
