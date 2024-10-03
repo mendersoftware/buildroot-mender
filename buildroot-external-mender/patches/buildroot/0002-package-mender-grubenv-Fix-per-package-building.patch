@@ -1,7 +1,7 @@
 From cd14619a78d48bfb009ed61ed640391f82ceb333 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
 Date: Wed, 11 Sep 2024 12:58:41 +0200
-Subject: [PATCH 3/8] package/mender-grubenv: Fix per-package building
+Subject: [PATCH 2/3] package/mender-grubenv: Fix per-package building
 
 Normally, two packages should never touch the same file. However, the
 mender-grubenv package is a special case, as its sole purpose is to overwrite
@@ -30,12 +30,12 @@ index 8679ad9236..a6d8d48d43 100644
 @@ -11,7 +11,6 @@ MENDER_GRUBENV_LICENSE_FILES = LICENSE
  # Grub2 must be built first so this package can overwrite the config files
  # provided by grub.
- MENDER_GRUBENV_DEPENDENCIES = grub2
+ MENDER_GRUBENV_DEPENDENCIES = grub2 util-linux
 -MENDER_GRUBENV_INSTALL_IMAGES = YES
  
  MENDER_GRUBENV_MAKE_ENV = \
  	$(TARGET_CONFIGURE_OPTS) \
-@@ -34,12 +33,13 @@ MENDER_GRUBENV_MAKE_ENV += BOOT_DIR=/boot/grub
+@@ -34,12 +33,13 @@ MENDER_GRUBENV_MAKE_ENV += BOOT_DIR=/boot
  
  define MENDER_GRUBENV_INSTALL_I386_CFG
  	mkdir -p $(BINARIES_DIR)/boot-part/grub
@@ -43,7 +43,7 @@ index 8679ad9236..a6d8d48d43 100644
 +	cp -dpfr $(MENDER_GRUBENV_BUILDDIR)/mender_grub.cfg \
  		$(TARGET_DIR)/boot/grub/grub.cfg
  	cp -dpfr $(TARGET_DIR)/boot/grub/grub.cfg \
- 		$(TARGET_DIR)/boot/grub/grub-mender-grubenv \
+ 		$(TARGET_DIR)/boot/grub-mender-grubenv \
  		$(BINARIES_DIR)/boot-part/
  endef
 +MENDER_GRUBENV_TARGET_FINALIZE_HOOKS += MENDER_GRUBENV_INSTALL_I386_CFG

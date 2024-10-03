@@ -1,7 +1,7 @@
 From 68653e684db53082f6aa663429184581166e9a88 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
 Date: Wed, 11 Sep 2024 13:02:35 +0200
-Subject: [PATCH 8/8] package/mender: bump package version to 4.0.4
+Subject: [PATCH 3/3] package/mender: bump package version to 4.0.4
 
 A complete rewrite of the package, as it is now a cmake package.
 
@@ -31,7 +31,7 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  board/mender/x86_64/linux.config              |   2 +
  board/mender/x86_64/post-build.sh             |  10 +-
  board/mender/x86_64/post-image-efi.sh         |  30 ++-
- configs/mender_x86_64_efi_defconfig           |   6 +-
+ configs/mender_x86_64_efi_defconfig           |   4 +-
  package/mender/Config.in                      | 133 ++++++++++--
  package/mender/S42mender                      |  60 ------
  package/mender/artifact_info                  |   1 -
@@ -50,7 +50,7 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  support/testing/tests/package/test_mender.py  |  46 ++--
  .../tests/package/test_mender/post-build.sh   |  30 +++
  .../rootfs-overlay/etc/mender/mender.conf     |  11 +
- 22 files changed, 470 insertions(+), 242 deletions(-)
+ 22 files changed, 469 insertions(+), 241 deletions(-)
  delete mode 100644 package/mender/S42mender
  delete mode 100644 package/mender/artifact_info
  delete mode 100644 package/mender/device_type
@@ -172,29 +172,26 @@ index 97b9e06d21..e8479f6759 100755
      generate_image
      generate_mender_image
 diff --git a/configs/mender_x86_64_efi_defconfig b/configs/mender_x86_64_efi_defconfig
-index b2b30af832..7c1064b98a 100644
+index d0e0d8a364..fd008259de 100644
 --- a/configs/mender_x86_64_efi_defconfig
 +++ b/configs/mender_x86_64_efi_defconfig
-@@ -8,8 +8,8 @@ BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6=y
- BR2_TARGET_GENERIC_GETTY_PORT="ttyS0"
- BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_EUDEV=y
- 
--# Required as vda4 doesn't mount on first boot with busybox
+@@ -1,6 +1,6 @@
+ BR2_x86_64=y
+ BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6=y
 -BR2_INIT_SYSV=y
-+# Systemd is a requirement of Mender.
-++BR2_INIT_SYSTEMD=y
- 
- # Required tools to create bootable media
- BR2_PACKAGE_HOST_DOSFSTOOLS=y
-@@ -29,7 +29,7 @@ BR2_PACKAGE_HOST_MENDER_ARTIFACT=y
- # Filesystem / image
++BR2_INIT_SYSTEMD=y
+ BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_EUDEV=y
+ BR2_TARGET_GENERIC_GETTY_PORT="ttyS0"
+ BR2_ROOTFS_OVERLAY="board/mender/x86_64/overlay"
+@@ -42,7 +42,7 @@ BR2_PACKAGE_MENDER_GRUBENV=y
+ BR2_PACKAGE_MENDER_GRUBENV_DEFINES="board/mender/x86_64/mender_grubenv_defines"
  BR2_TARGET_ROOTFS_EXT2=y
  BR2_TARGET_ROOTFS_EXT2_4=y
 -BR2_TARGET_ROOTFS_EXT2_SIZE="128M"
 +BR2_TARGET_ROOTFS_EXT2_SIZE="192M"
  # BR2_TARGET_ROOTFS_TAR is not set
- BR2_ROOTFS_OVERLAY="board/mender/x86_64/overlay"
- BR2_ROOTFS_POST_BUILD_SCRIPT="board/mender/x86_64/post-build.sh"
+ BR2_TARGET_GRUB2=y
+ BR2_TARGET_GRUB2_X86_64_EFI=y
 diff --git a/package/mender/Config.in b/package/mender/Config.in
 index c9b9d0b757..faa7d10473 100644
 --- a/package/mender/Config.in
@@ -1068,5 +1065,5 @@ index 0000000000..5f423fb2cb
 +  "DeviceTypeFile": "/etc/mender/device_type"
 +}
 -- 
-2.46.0
+2.46.2
 

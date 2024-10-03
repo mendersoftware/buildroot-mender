@@ -7,7 +7,7 @@ services:
          BUILDROOT_DIR: buildroot
          BUILDROOT_VERSION: git
          BUILDROOT_BRANCH: master
-         BUILDROOT_COMMIT: 03e8d86f457809f5f5ac3200f0b2612d86b4c006
+         BUILDROOT_COMMIT: b98062f7301bc72d2a59cca733f36525405d3bb9
          # Space deliminated list of external trees of which to use.
          EXTERNAL_TREES: buildroot-external-mender
          BUILDROOT_PATCH_DIR: "buildroot-external-mender/patches/buildroot/"
