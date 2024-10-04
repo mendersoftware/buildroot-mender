@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 shopt -s inherit_errexit
 ARTIFACT_NAME="master"
-DATA_PART_SIZE="16M"
+DATA_PART_SIZE="256M"
+DATA_PART="${BINARIES_DIR}"/data-part
 GENERATE_MENDER_IMAGE="false"
 
 
@@ -35,13 +36,21 @@ get_best_compression() {
 # shellcheck disable=SC2154
 generate_mender_bootstrap_artifact() {
   compression=$(get_best_compression)
-  rm -rf "${BINARIES_DIR}"/data-part
-  rm -rf "${BINARIES_DIR}"/data-part.ext4
-  mkdir -p "${BINARIES_DIR}"/data-part/mender
-  cd "${BINARIES_DIR}"/data-part/mender
+  rm -rf "${DATA_PART:?}"
+  rm -rf "${BINARIES_DIR:?}"/data-part.ext4
+  rm -rf "${BINARIES_DIR:?}"/bootstrap.mender
+
+  mkdir -p "${DATA_PART}"
+  cd "${DATA_PART}"
   ln -sf /etc/mender/mender.conf mender.conf
   cd -
+
   img_checksum=$(sha256sum "${BINARIES_DIR}"/rootfs.ext4 | awk '{print $1}' || true)
+  if [[ -z "${img_checksum}" ]]; then
+    echo "Could not determine the checksum for ${BINARIES_DIR}/rootfs.ext4!"
+    exit 1
+  fi
+
   "${HOST_DIR}"/bin/mender-artifact \
     write bootstrap-artifact \
     --compression "${compression}" \
@@ -52,7 +61,7 @@ generate_mender_bootstrap_artifact() {
     --clears-provides "rootfs-image.*" \
     --output-path "${BINARIES_DIR}"/bootstrap.mender \
     --version 3
-    cp "${BINARIES_DIR}"/bootstrap.mender "${BINARIES_DIR}"/data-part/mender/bootstrap.mender
+    cp "${BINARIES_DIR}"/bootstrap.mender "${DATA_PART}"/bootstrap.mender
 }
 
 
@@ -60,6 +69,8 @@ generate_mender_bootstrap_artifact() {
 # shellcheck disable=SC2154
 generate_mender_image() {
   compression=$(get_best_compression)
+  MENDER_IMAGE="${DEVICE_TYPE}"-"${ARTIFACT_NAME}".mender
+
   if [[ ${GENERATE_MENDER_IMAGE} == "true" ]]; then
     echo "Creating ${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender"
     img_checksum=$(sha256sum "${BINARIES_DIR}"/rootfs.ext4 | awk '{print $1}' || true)
@@ -71,14 +82,16 @@ generate_mender_image() {
       --provides "rootfs-image.version:${ARTIFACT_NAME}" \
       --provides "rootfs-image.checksum:${img_checksum}" \
       --file "${BINARIES_DIR}"/rootfs.ext2 \
-      --output-path "${BINARIES_DIR}"/"${DEVICE_TYPE}"-"${ARTIFACT_NAME}".mender
+      --output-path "${BINARIES_DIR}"/"${MENDER_IMAGE}"
   fi
+  cp "${BINARIES_DIR}"/"${MENDER_IMAGE}" "${DATA_PART}"/
 }
 
 
 # Create the data partition
 make_data_partition() {
   generate_mender_bootstrap_artifact
+  generate_mender_image
   "${HOST_DIR}"/sbin/mkfs.ext4 \
   -d "${BINARIES_DIR}"/data-part \
   -r 1 \
