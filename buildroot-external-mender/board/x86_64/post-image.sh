@@ -27,7 +27,6 @@ main(){
   parse_args "${@}"
   make_data_partition "64bit"
   generate_image
-  generate_mender_image
   copy_image
   exit $?
 }

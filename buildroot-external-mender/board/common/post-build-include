@@ -11,7 +11,7 @@ setup_mender(){
   mkdir -p var/lock
   rm -rf var/lib/mender
   cd var/lib
-  ln -sf ../../data/mender mender
+  ln -sf /data/ mender
 }
 
 
