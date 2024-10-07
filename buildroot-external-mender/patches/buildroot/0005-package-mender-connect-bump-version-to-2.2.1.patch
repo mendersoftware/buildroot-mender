@@ -1,7 +1,7 @@
 From a1853a8eb67959846a1d7e195df9e68e3efcff51 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
 Date: Wed, 4 Sep 2024 11:51:29 +0200
-Subject: [PATCH v2 5/5] package/mender-connect: bump version to 2.2.1
+Subject: [PATCH v2 5/8] package/mender-connect: bump version to 2.2.1
 
 License changes:
 New:

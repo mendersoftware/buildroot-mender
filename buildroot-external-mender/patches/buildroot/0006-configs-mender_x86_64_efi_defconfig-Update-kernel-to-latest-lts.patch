@@ -1,7 +1,7 @@
 From a9d5efb69e0c3b0383ef2b1e7c18a1ff81e4bebe Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
 Date: Mon, 9 Sep 2024 12:36:44 +0000
-Subject: [PATCH 2/3] configs/mender_x86_64_efi_defconfig: Update kernel to
+Subject: [PATCH 6/8] configs/mender_x86_64_efi_defconfig: Update kernel to
  6.6.50
 
 Update the kernel to the latest 6.6 LTS version

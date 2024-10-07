@@ -1,7 +1,7 @@
 From 609428eba86dfff358a71af508f8c16bfabf0a21 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
 Date: Wed, 4 Sep 2024 11:23:35 +0200
-Subject: [PATCH v2 2/5] package/mender-grubenv: Fix per-package building
+Subject: [PATCH 2/8] package/mender-grubenv: Fix per-package building
 
 Normally, two packages should never touch the same file. However, the
 mender-grubenv package is a special case, as its sole purpose is to overwrite

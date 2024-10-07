@@ -1,7 +1,7 @@
 From f8fe61188c168f7749d59d036396f1c95d97478f Mon Sep 17 00:00:00 2001
 From: Adam Duskett <aduskett@gmail.com>
 Date: Thu, 8 Feb 2024 17:56:52 +0100
-Subject: [PATCH] imx8-bootloader-prepare.sh: remove signed_hdmi
+Subject: [PATCH 1/8] imx8-bootloader-prepare.sh: remove signed_hdmi
 
 Later versions of ATF do not include the signed_hdmi.bin file.
 
