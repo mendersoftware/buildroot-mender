@@ -86,7 +86,6 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
  board/mender/x86_64/linux.config              |   1 +
  board/mender/x86_64/post-build.sh             |   8 +-
- board/mender/x86_64/post-image-efi.sh         |  46 ++++-
  configs/mender_x86_64_efi_defconfig           |   5 +-
  .../0001-rootfs-image-shellcheck-fixups.patch | 110 ++++++++++
  package/mender/Config.in                      | 132 ++++++++++--
@@ -104,7 +103,7 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  .../tests/package/test_mender/post-build.sh   |  30 +++
  .../rootfs-overlay/etc/mender/artifact_info   |   1 -
  .../rootfs-overlay/etc/mender/mender.conf     |  11 +
- 20 files changed, 518 insertions(+), 254 deletions(-)
+ 19 files changed, 489 insertions(+), 254 deletions(-)
  create mode 100644 package/mender/0001-rootfs-image-shellcheck-fixups.patch
  delete mode 100644 package/mender/S42mender
  delete mode 100644 package/mender/artifact_info
@@ -129,7 +128,7 @@ index f17fc18edb..8d24b86e88 100644
  CONFIG_NLS_ISO8859_1=y
  CONFIG_UNWINDER_FRAME_POINTER=y
 diff --git a/board/mender/x86_64/post-build.sh b/board/mender/x86_64/post-build.sh
-index 23d1120d45..609d5c4eef 100755
+index bc4f4b8f11..ba50b53a9a 100755
 --- a/board/mender/x86_64/post-build.sh
 +++ b/board/mender/x86_64/post-build.sh
 @@ -1,7 +1,6 @@
@@ -138,9 +137,9 @@ index 23d1120d45..609d5c4eef 100755
  DEVICE_TYPE="buildroot-x86_64"
 -ARTIFACT_NAME="1.0"
  
- function parse_args {
+ parse_args() {
      local o O opts
-@@ -16,10 +15,12 @@ function parse_args {
+@@ -16,10 +15,12 @@ parse_args() {
              shift 2
              ;;
          (-d|--device-type)
@@ -155,7 +154,7 @@ index 23d1120d45..609d5c4eef 100755
              ;;
          (--)
              shift; break
-@@ -48,7 +49,6 @@ function main {
+@@ -48,7 +49,6 @@ main() {
      parse_args "${@}"
      mender_fixup
      echo "device_type=${DEVICE_TYPE}" > "${TARGET_DIR}/etc/mender/device_type"
@@ -163,102 +162,6 @@ index 23d1120d45..609d5c4eef 100755
  }
  
  main "${@}"
-diff --git a/board/mender/x86_64/post-image-efi.sh b/board/mender/x86_64/post-image-efi.sh
-index 97b9e06d21..36d389b3d6 100755
---- a/board/mender/x86_64/post-image-efi.sh
-+++ b/board/mender/x86_64/post-image-efi.sh
-@@ -1,13 +1,14 @@
- #!/usr/bin/env bash
- set -e
- BOARD_DIR="$(realpath "$(dirname "$0")")"
-+DATA_PART="${BINARIES_DIR}"/data-part
- DATA_PART_SIZE="32M"
- DEVICE_TYPE="buildroot-x86_64"
- ARTIFACT_NAME="1.0"
- 
- 
- # Parse arguments.
--function parse_args {
-+parse_args() {
-     local o O opts
-     o='a:o:d:'
-     O='artifact-name:,data-part-size:,device-type:'
-@@ -31,9 +32,37 @@ function parse_args {
-     done
- }
- 
-+
-+# Generate a mender bootstrap artifact.
-+# See https://northerntech.atlassian.net/browse/MEN-2585
-+generate_mender_bootstrap_artifact() {
-+  bootstrap_artifact="bootstrap.mender"
-+  img_checksum=$(sha256sum "${BINARIES_DIR}"/rootfs.ext4 |awk '{print $1}')
-+
-+  rm -rf "${DATA_PART:?}"
-+  mkdir -p "${DATA_PART}"
-+  rm -rf "${BINARIES_DIR:?}"/"${bootstrap_artifact}"
-+
-+  "${HOST_DIR}"/bin/mender-artifact write bootstrap-artifact \
-+    --compression lzma \
-+    --artifact-name "${ARTIFACT_NAME}" \
-+    --device-type "${DEVICE_TYPE}" \
-+    --provides "rootfs-image.version:${ARTIFACT_NAME}" \
-+    --provides "rootfs-image.checksum:${img_checksum}" \
-+    --clears-provides "rootfs-image.*" \
-+    --output-path "${BINARIES_DIR}"/"${bootstrap_artifact}" \
-+    --version 3
-+
-+    cp -rf "${BINARIES_DIR}"/"${bootstrap_artifact}" "${DATA_PART}"/
-+    cd "${DATA_PART}"/
-+    ln -sf /etc/mender/mender.conf mender.conf
-+    cd -
-+}
-+
- # Create the data partition
- function make_data_partition {
-     "${HOST_DIR}/sbin/mkfs.ext4" \
-+        -d "${DATA_PART}" \
-         -F \
-         -r 1 \
-         -N 0 \
-@@ -44,28 +73,31 @@ function make_data_partition {
- 
- 
- # Create a mender image.
--function generate_mender_image {
-+generate_mender_image() {
-     echo "Creating ${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender"
-     "${HOST_DIR}/bin/mender-artifact" \
--        --compression lzma \
-         write rootfs-image \
-+        --compression lzma \
-         -t "${DEVICE_TYPE}" \
-         -n "${BR2_VERSION}" \
-         -f "${BINARIES_DIR}/rootfs.ext2" \
-         -o "${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender"
-+    cp "${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender" "${DATA_PART}"/
- }
- 
- 
--function generate_image {
--    sh support/scripts/genimage.sh -c "${BOARD_DIR}/genimage-efi.cfg"
-+generate_image() {
-+    sh support/scripts/genimage.sh -c "${BOARD_DIR}"/genimage-efi.cfg
- }
- 
-+
- # Main function.
--function main {
-+main() {
-     parse_args "${@}"
-+    generate_mender_bootstrap_artifact
-+    generate_mender_image
-     make_data_partition
-     generate_image
--    generate_mender_image
-     exit $?
- }
- 
 diff --git a/configs/mender_x86_64_efi_defconfig b/configs/mender_x86_64_efi_defconfig
 index d0e0d8a364..718f5886dd 100644
 --- a/configs/mender_x86_64_efi_defconfig
@@ -1239,5 +1142,5 @@ index 0000000000..5f423fb2cb
 +  "DeviceTypeFile": "/etc/mender/device_type"
 +}
 -- 
-2.46.2
+2.47.0
 

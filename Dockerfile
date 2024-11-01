@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM ubuntu:noble
 LABEL maintainer="Adam Duskett <adam.duskett@amarulasolutions.com>" \
 description="Everything needed to build Buildroot mender configs in a reproducable manner."
 
@@ -10,8 +10,9 @@ RUN set -e; \
   mkdir -p /data/; \
   apt --allow-unauthenticated update; \
   apt --allow-unauthenticated upgrade -y; \
-  apt-get install -y apt-utils gpgv2 locales tzdata; \
+  apt-get install -y apt-utils locales tzdata; \
   localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8; \
+  locale-gen en_US.UTF-8; \
   ln -snf /usr/share/zoneinfo/$TZ /etc/localtime; \
   echo $TZ > /etc/timezone;
 
@@ -68,8 +69,7 @@ RUN set -e; \
   libc6-i386;
 
 RUN set -e; \
-  pip3 install -U pip; \
-  pip3 install \
+  pip3 install --force --break-system-packages \
   spdx_lookup==0.3.3;
 
 # Set these arguments in the docker-compose.yml file and the docker/env file
@@ -89,8 +89,11 @@ ARG UID
 ARG GID
 
 # Add the ${BUILDROOT_USER} user, as buildroot should never be built as root.
+# Also, the ubuntu 24.04 docker comes with an ubuntu user with the GID and UID
+# set to 1000. As most users will want to use 1000, delete the user.
 RUN /bin/bash; \
   set -e; \
+  userdel ubuntu; \
   groupadd -r -g ${GID} ${BUILDROOT_USER}; \
   useradd -ms /bin/bash -u ${UID} -g ${GID} ${BUILDROOT_USER}; \
   echo "alias ls='ls --color=auto'" >> /home/${BUILDROOT_USER}/.bashrc; \
