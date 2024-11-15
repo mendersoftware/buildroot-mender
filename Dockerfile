@@ -1,6 +1,4 @@
 FROM ubuntu:noble
-LABEL maintainer="Adam Duskett <adam.duskett@amarulasolutions.com>" \
-description="Everything needed to build Buildroot mender configs in a reproducable manner."
 
 ENV DEBIAN_FRONTEND=noninteractive 
 ENV TZ=US/Pacific
@@ -52,7 +50,9 @@ RUN set -e; \
   python3-pip \
   python3-aiohttp \
   python3-cvelib \
+  python3-flake8 \
   python3-ijson \
+  python3-magic \
   python3-nose2 \
   python3-pexpect \
   python3-requests \

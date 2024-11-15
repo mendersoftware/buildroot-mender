@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 CWD="$(realpath "$(dirname "$0")")"
 X64_QEMU="qemu-system-x86_64"
 CPU=""
@@ -8,7 +8,15 @@ LIBGL_DRIVERS_PATH=/usr/lib64/dri
 OVMF="/usr/share/OVMF/OVMF_CODE.fd"
 OVMF_VARS="/usr/share/OVMF/OVMF_VARS.fd"
 DISK_IMG="$(realpath "${CWD}"/../../images/x64.img)"
+QEMU_BRIDGE_HELPER="/usr/libexec/qemu-bridge-helper"
 
+IS_UBUNTU=$(grep "Ubuntu" /etc/os-release || true)
+if [ -n "${IS_UBUNTU}" ]; then
+  LIBGL_DRIVERS_PATH="/usr/lib/x86_64-linux-gnu/dri"
+  OVMF="/usr/share/OVMF/OVMF_CODE_4M.fd"
+  OVMF_VARS="/usr/share/OVMF/OVMF_VARS_4M.fd"
+  QEMU_BRIDGE_HELPER="/usr/lib/qemu/qemu-bridge-helper"
+fi
 
 check_env() {
   qemu=$(which "${X64_QEMU}" || true)
@@ -24,6 +32,7 @@ check_env() {
     exit 1
   fi
   if [ ! -e "${OVMF}" ]; then
+
     echo "CRITICAL: ${OVMF} does not exist. Please install the edk2-ovmf package!"
     exit 1
   fi
@@ -64,7 +73,7 @@ run_virt() {
     -device ahci,id=ahci \
     -device ide-hd,drive=pcu,bus=ahci.0 \
     -net nic,model=virtio \
-    -netdev bridge,br=virbr0,id=net0,helper=/usr/libexec/qemu-bridge-helper -device virtio-net-pci,netdev=net0 \
+    -netdev bridge,br=virbr0,id=net0,helper="${QEMU_BRIDGE_HELPER}" -device virtio-net-pci,netdev=net0 \
     -net user \
     -device virtio-vga-gl \
     -display gtk,gl=on,show-cursor=on \
