@@ -4,7 +4,8 @@
 #
 ################################################################################
 
-MENDER_FLASH_VERSION = 0ccfb0d0319fb884170925fd13ae01082843840b
+# 1.0.2
+MENDER_FLASH_VERSION = 8eea8dcc55266d9a657f9d61dd7aa119aab675ac
 MENDER_FLASH_SITE = https://github.com/mendersoftware/mender-flash.git
 MENDER_FLASH_SITE_METHOD = git
 MENDER_FLASH_GIT_SUBMODULES = YES

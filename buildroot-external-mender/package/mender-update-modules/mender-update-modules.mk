@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-MENDER_UPDATE_MODULES_VERSION = 699391004c7a7ffa1cb71fb36f44175a6a7f4c0f
+MENDER_UPDATE_MODULES_VERSION = f97418686e2213dbca02a1dea9668f4335fc3177
 MENDER_UPDATE_MODULES_SITE = $(call github,mendersoftware,mender-update-modules,$(MENDER_UPDATE_MODULES_VERSION))
 MENDER_UPDATE_MODULES_LICENSE = Apache-2.0
 MENDER_UPDATE_MODULES_LICENSE_FILES = LICENSE
