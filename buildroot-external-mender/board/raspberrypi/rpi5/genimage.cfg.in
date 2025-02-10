@@ -1,0 +1,38 @@
+image boot.vfat {
+  vfat {
+    files = {
+      "Image",
+      "boot.scr",
+      "u-boot.bin",
+      "bcm2712-rpi-5-b.dtb",
+      "config.txt",
+      "#OVERLAY_DIR#",
+    }
+  }
+  size = 32M
+}
+
+image rpi5.img {
+  hdimage {}
+
+  partition boot {
+    partition-type = 0xC
+    bootable = "true"
+    image = "boot.vfat"
+  }
+
+  partition roota {
+    partition-type = 0x83
+    image = "rootfs.ext4"
+  }
+
+  partition rootb {
+    partition-type = 0x83
+    image = "rootfs.ext4"
+  }
+
+  partition data {
+    partition-type = "0x83"
+    image = "data-part.ext4"
+  }
+}
