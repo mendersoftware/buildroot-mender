@@ -5,7 +5,7 @@ services:
       args:
          BUILDROOT_USER: br-user
          BUILDROOT_DIR: buildroot
-         BUILDROOT_VERSION: git
+         BUILDROOT_VERSION: 2025.02
          BUILDROOT_BRANCH: master
          BUILDROOT_COMMIT: dfc6aea315f2fc4169affe0bb46c22d9e4d8fa82
          # Space deliminated list of external trees of which to use.
