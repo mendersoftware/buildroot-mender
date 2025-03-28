@@ -1,7 +1,7 @@
-From 7f1b99691ec3d762743b342043e5e6bd4dbb0ca5 Mon Sep 17 00:00:00 2001
+From 3d1b0e568fe77a84873a36b5e7875daf41fbbea4 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Wed, 5 Feb 2025 12:07:12 +0100
-Subject: [PATCH] 1
+Date: Fri, 28 Mar 2025 09:42:49 +0100
+Subject: [PATCH] package/mender: bump to version 5.0.1
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
@@ -10,11 +10,11 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  package/mender/S42mender-update              |  46 +++++
  package/mender/device_type                   |   1 -
  package/mender/mender-client.service         |  13 --
- package/mender/mender.hash                   |  62 +++----
+ package/mender/mender.hash                   |  54 ++----
  package/mender/mender.mk                     | 178 ++++++++++---------
  package/mender/server.crt                    |  22 ---
  support/testing/tests/package/test_mender.py |  56 ++++--
- 9 files changed, 226 insertions(+), 231 deletions(-)
+ 9 files changed, 222 insertions(+), 227 deletions(-)
  delete mode 100644 package/mender/S42mender
  create mode 100644 package/mender/S42mender-update
  delete mode 100644 package/mender/device_type
@@ -216,30 +216,32 @@ index 47e439993c..0000000000
 -[Install]
 -WantedBy=multi-user.target
 diff --git a/package/mender/mender.hash b/package/mender/mender.hash
-index 17fe08c827..52bf9d020e 100644
+index 17fe08c827..11dd46eaf4 100644
 --- a/package/mender/mender.hash
 +++ b/package/mender/mender.hash
 @@ -1,47 +1,29 @@
  # Locally computed:
 -sha256  35e369759b8d4f012153e538b5daf1e0cebe842205811e708332c5a092270ac5  mender-3.5.3-go2.tar.gz
-+sha256  53438fc3307e0201b342897aec0adc7828c65f1026d7da7df43d3bafbbaad867  mender-47313c6d30db1da2d24ee099b72e0917d2b82254-git4.tar.gz
-+sha256  271d1ce40d438f189408c38cd90dafc4aedbe49fc8a7d835a706345c1d253bc6  LIC_FILES_CHKSUM.sha256
++sha256  b422933de1777535755596b830d47274574916926ca5e4fa146a1add0c00e831  mender-fd45bad6864f97595cd14e9b1e1e4fb63a9cedbc-git4.tar.gz
++sha256  508ae36a3a167b77a9cb04b5943935c189fb384b0d59193ae6e0afe4f3d00315  LIC_FILES_CHKSUM.sha256
  
  # Vendor licenses
  # Generated with sed '/^[A-Za-z0-9_]/s/^/sha256  /' LIC_FILES_CHKSUM.sha256
  
  # Apache-2.0 license.
- sha256  d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
+-sha256  d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
 -sha256  52b2497ce07650b825015e80ca7a5d40c360c04c530234ca6d950b0f98bca23a  vendor/github.com/mendersoftware/mender-artifact/LICENSE
 -sha256  73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68  vendor/github.com/mendersoftware/openssl/LICENSE
 -sha256  cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  vendor/github.com/minio/sha256-simd/LICENSE
 -sha256  8f5d89b47d7a05a199b77b7e0f362dad391d451ebda4ef48ba11c50c071564c7  vendor/github.com/mendersoftware/progressbar/LICENSE
--#
++sha256  38791d93beae962b266e11ac888ea2af4f07578b272c2f9dcb05f54f32960a76  LICENSE
+ #
 -# BSD 2 Clause license.
 -sha256  8d427fd87bc9579ea368fde3d49f9ca22eac857f91a9dec7e3004bdfab7dee86  vendor/github.com/pkg/errors/LICENSE
 -sha256  e4646a82a976369d7ae8f6ed5c11d35dc0af18433a8ccc24c85b459ad8b95128  vendor/github.com/godbus/dbus/LICENSE
 -sha256  2be1b548b0387ca8948e1bb9434e709126904d15f622cc2d0d8e7f186e4d122d  vendor/github.com/gorilla/websocket/LICENSE
--#
++sha256  5e0df8c845c742e76f2f64d2d9ce1b7e74a2422fddbc577ae6a56319083de0bf  src/common/vendor/yaml-cpp/test/gtest-1.11.0/googlemock/scripts/generator/LICENSE
+ #
 -# BSD 3 Clause license.
 -sha256  0d9e582ee4bff57bf1189c9e514e6da7ce277f9cd3bc2d488b22fbb39a6d87cf  vendor/github.com/klauspost/compress/LICENSE
 -sha256  2eb550be6801c1ea434feba53bf6d12e7c71c90253e0a9de4a4f46cf88b56477  vendor/github.com/pmezard/go-difflib/LICENSE
@@ -247,10 +249,17 @@ index 17fe08c827..52bf9d020e 100644
 -sha256  0634b008cee55ca01f0888d2f5aba2d34e66c3f52c31a4e16a5d5d33d0c2a03e  vendor/github.com/bmatsuo/lmdb-go/LICENSE.md
 -sha256  87640bc4df2ceb1559f268a3db1ba859ab780f7ba5b1b4545173d4680a3d918b  vendor/github.com/remyoudompheng/go-liblzma/LICENSE
 -sha256  2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/golang.org/x/term/LICENSE
--#
++# MIT clause license
++sha256  bcf7b8d2662716afdcd77ae5e76c0b9ae5f9ba4c10a7cfc397253b81a7c41f3c  src/common/vendor/json/LICENSE.MIT
++sha256  fd1d291046af6714295250488e8eeef3336bf89f63beea9cd1f358668585de58  src/common/vendor/json/docs/mkdocs/docs/home/license.md
++sha256  2aefa40fa7e1c0fab18fbad5b15b02406eea1399d3cca42cc1012b65b4a56f74  src/common/vendor/tiny-process-library/LICENSE
++sha256  aa6fcc27be034e41e21dd832f9175bfe694a48491d9e14ff0fa278e19ad14f1b  src/common/vendor/yaml-cpp/LICENSE
+ #
 -# ISC license.
 -sha256  1b93a317849ee09d3d7e4f1d20c2b78ddb230b4becb12d7c224c927b9d470251  vendor/github.com/davecgh/go-spew/LICENSE
--#
++# UNLICENSE
++sha256  7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c  src/common/vendor/lmdbxx/UNLICENSE
+ #
 -# MIT license.
 -sha256  6d2de1cde19c4d2bd8bcd9aaa1d581f4cfa3db9cf71896140330eaa2f2687685  vendor/github.com/klauspost/pgzip/LICENSE
 -sha256  f69f157b0be75da373605dbc8bbf142e8924ee82d8f44f11bcaf351335bf98cf  vendor/github.com/klauspost/compress/internal/snapref/LICENSE
@@ -263,34 +272,21 @@ index 17fe08c827..52bf9d020e 100644
 -sha256  b2663894033a05fd80261176cd8da1d72546e25842d5c1abcc852ca23b6b61b0  vendor/github.com/stretchr/objx/LICENSE
 -sha256  d18f6323b71b0b768bb5e9616e36da390fbd39369a81807cca352de4e4e6aa0b  vendor/gopkg.in/yaml.v3/LICENSE
 -sha256  08eab1118c80885fa1fa6a6dd7303f65a379fcb3733e063d20d1bbc2c76e6fa1  vendor/github.com/mattn/go-isatty/LICENSE
--#
++# CC0 1.0 Universal
++sha256  a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499  src/common/vendor/expected/COPYING
+ #
 -# OpenLDAP Public License
 -sha256  310fe25c858a9515fc8c8d7d1f24a67c9496f84a91e0a0e41ea9975b1371e569  vendor/github.com/bmatsuo/lmdb-go/LICENSE.mdb.md
 -
 -# sha256 of all the vendor licenses combined
 -sha256  86407bd98d5ea7fb0f09ab771c3333e975d06565b809a2dd95f864dc1e3a09b3  LIC_FILES_CHKSUM.sha256
-+
-+sha256  5e0df8c845c742e76f2f64d2d9ce1b7e74a2422fddbc577ae6a56319083de0bf  src/common/vendor/yaml-cpp/test/gtest-1.11.0/googlemock/scripts/generator/LICENSE
-+
-+# MIT clause license
-+sha256  bcf7b8d2662716afdcd77ae5e76c0b9ae5f9ba4c10a7cfc397253b81a7c41f3c  src/common/vendor/json/LICENSE.MIT
-+sha256  fd1d291046af6714295250488e8eeef3336bf89f63beea9cd1f358668585de58  src/common/vendor/json/docs/mkdocs/docs/home/license.md
-+sha256  2aefa40fa7e1c0fab18fbad5b15b02406eea1399d3cca42cc1012b65b4a56f74  src/common/vendor/tiny-process-library/LICENSE
-+sha256  aa6fcc27be034e41e21dd832f9175bfe694a48491d9e14ff0fa278e19ad14f1b  src/common/vendor/yaml-cpp/LICENSE
-+
-+# UNLICENSE
-+sha256  7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c  src/common/vendor/lmdbxx/UNLICENSE
-+
-+# CC0 1.0 Universal
-+sha256  a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499  src/common/vendor/expected/COPYING
-+
 +# Boost Software License
 +sha256  c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566  src/common/vendor/optional-lite/LICENSE.txt
-+
++#
 +# BSD-3
 +sha256  9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138  src/common/vendor/yaml-cpp/test/gtest-1.11.0/LICENSE
 diff --git a/package/mender/mender.mk b/package/mender/mender.mk
-index 146e6b2b73..e7dd4a4e57 100644
+index 146e6b2b73..8cb30f09ae 100644
 --- a/package/mender/mender.mk
 +++ b/package/mender/mender.mk
 @@ -4,110 +4,126 @@
@@ -300,8 +296,8 @@ index 146e6b2b73..e7dd4a4e57 100644
 -MENDER_VERSION = 3.5.3
 -MENDER_SITE = $(call github,mendersoftware,mender,$(MENDER_VERSION))
 -MENDER_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, OLDAP-2.8
-+# 5.0.0
-+MENDER_VERSION = 47313c6d30db1da2d24ee099b72e0917d2b82254
++# 5.0.1
++MENDER_VERSION = fd45bad6864f97595cd14e9b1e1e4fb63a9cedbc
 +MENDER_SITE = https://github.com/mendersoftware/mender.git
 +MENDER_SITE_METHOD = git
 +MENDER_GIT_SUBMODULES = YES
@@ -605,5 +601,5 @@ index 0c83c5644e..5aae83ebe8 100644
          self.assertEqual(exit_code, 1)
  
 -- 
-2.48.1
+2.49.0
 
