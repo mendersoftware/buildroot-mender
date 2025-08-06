@@ -27,7 +27,7 @@ section in [the Mender documentation](https://docs.mender.io/).
 
 ## Quick setup
   - Clone this repository:
-    - `git clone https://github.com/mendersoftware/buildroot-mender -b 2023.11.x`
+    - `git clone https://github.com/mendersoftware/buildroot-mender`
   - Build the docker container:
     - `make build`
  - choose the board you want to build by looking in the docker/ directory for .json files. IE: docker/x86_64.json
