@@ -32,7 +32,7 @@ help:
 
 .PHONY: build
 build:
-	@docker compose build
+	@DOCKER_BUILDKIT=0 docker compose build
 
 .PHONY: down
 down:

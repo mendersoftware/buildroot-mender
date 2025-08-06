@@ -70,9 +70,10 @@ class InitParse:
             return self.__single_target(single_target, config)
         for defconfig in self.env["configs"]:
             config_obj = config.parse(defconfig)
-            if not config_obj["build"] or config_obj["skip"] or self.no_build:
-                self.logger.info(f"{config_obj['defconfig']}: Skip build step")
-                continue
+            if not config_obj["build"] or config_obj["skip"]:
+                if self.no_build:
+                    self.logger.info(f"{config_obj['defconfig']}: Skip build step")
+                    continue
             # Generate the legal information first, as to ensure the tarball is in the images
             # directory before post-image.sh is called.
             if config_obj["legal_info"]:
@@ -99,12 +100,12 @@ class InitParse:
                 logging.error(str(err))
                 sys.exit(-1)
         self.logger = Logger(__name__)
-        self.apply_configs = apply_configs
+        self.apply_configs = bool(apply_configs)
         self.user: str = "br-user"
         self.buildroot_dir_name: str = "buildroot"
         self.buildroot_path: str = f"/home/{self.user}/buildroot"
         self.fragment_dir: str = ""
         self.fragments: List[str] = []
         self.fragments = None
-        self.no_build = no_build
-        self.clean_after_build = clean_after_build
+        self.no_build = bool(no_build)
+        self.clean_after_build = bool(clean_after_build)

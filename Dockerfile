@@ -8,7 +8,7 @@ RUN set -e; \
   mkdir -p /data/; \
   apt --allow-unauthenticated update; \
   apt --allow-unauthenticated upgrade -y; \
-  apt-get install -y apt-utils locales tzdata; \
+  apt-get install --no-install-recommends -y apt-utils locales tzdata; \
   localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8; \
   locale-gen en_US.UTF-8; \
   ln -snf /usr/share/zoneinfo/$TZ /etc/localtime; \
@@ -18,7 +18,7 @@ RUN set -e; \
 RUN set -e; \
   apt-get update; \
   apt-get upgrade -y; \
-  apt-get install -y \
+  apt-get install --no-install-recommends -y \
   bash \
   bash-completion \
   bc \
@@ -29,6 +29,7 @@ RUN set -e; \
   cpio \
   curl \
   dialog \
+  efitools \
   expect \
   file \
   flex \
@@ -64,6 +65,7 @@ RUN set -e; \
   tar \
   unzip \
   wget \
+  xz-utils \
   gcc-multilib \
   g++-multilib \
   libc6-i386;

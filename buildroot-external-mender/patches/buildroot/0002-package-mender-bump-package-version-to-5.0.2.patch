@@ -1,7 +1,7 @@
 From 3d1b0e568fe77a84873a36b5e7875daf41fbbea4 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Fri, 28 Mar 2025 09:42:49 +0100
-Subject: [PATCH] package/mender: bump to version 5.0.1
+Date: Wed, 6 Aug 2025 10:02:36 +0200
+Subject: [PATCH] package/mender: bump to version 5.0.2
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
@@ -222,7 +222,7 @@ index 17fe08c827..11dd46eaf4 100644
 @@ -1,47 +1,29 @@
  # Locally computed:
 -sha256  35e369759b8d4f012153e538b5daf1e0cebe842205811e708332c5a092270ac5  mender-3.5.3-go2.tar.gz
-+sha256  b422933de1777535755596b830d47274574916926ca5e4fa146a1add0c00e831  mender-fd45bad6864f97595cd14e9b1e1e4fb63a9cedbc-git4.tar.gz
++sha256  b3218dd470167ca96e6ca1d2c7b6d868f6be2b91059a45f9ea6614efb4d714b7  mender-668dd28c2bac8624c217e37243fe400e645ce90b-git4.tar.gz
 +sha256  508ae36a3a167b77a9cb04b5943935c189fb384b0d59193ae6e0afe4f3d00315  LIC_FILES_CHKSUM.sha256
  
  # Vendor licenses
@@ -296,8 +296,8 @@ index 146e6b2b73..8cb30f09ae 100644
 -MENDER_VERSION = 3.5.3
 -MENDER_SITE = $(call github,mendersoftware,mender,$(MENDER_VERSION))
 -MENDER_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, OLDAP-2.8
-+# 5.0.1
-+MENDER_VERSION = fd45bad6864f97595cd14e9b1e1e4fb63a9cedbc
++# 5.0.2
++MENDER_VERSION = 668dd28c2bac8624c217e37243fe400e645ce90b
 +MENDER_SITE = https://github.com/mendersoftware/mender.git
 +MENDER_SITE_METHOD = git
 +MENDER_GIT_SUBMODULES = YES

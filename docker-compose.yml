@@ -1,18 +1,24 @@
+name: buildroot-mender
+
 services:
-   buildroot-mender:
+  buildroot-mender:
     build:
       context: ./
       args:
-         BUILDROOT_USER: br-user
-         BUILDROOT_DIR: buildroot
-         BUILDROOT_VERSION: 2025.02
-         BUILDROOT_BRANCH: master
-         BUILDROOT_COMMIT: dfc6aea315f2fc4169affe0bb46c22d9e4d8fa82
-         # Space deliminated list of external trees of which to use.
-         EXTERNAL_TREES: buildroot-external-mender
-         BUILDROOT_PATCH_DIR: "buildroot-external-mender/patches/buildroot/"
-         UID: 1000
-         GID: 1000
+        BUILDROOT_USER: br-user
+        BUILDROOT_DIR: buildroot
+        BUILDROOT_VERSION: 2025.02.4
+        # BUILDROOT_BRANCH: master
+        # BUILDROOT_COMMIT: 00d5d387f5b9be4398af4c684150785896ee7b7c
+        # Space deliminated list of external trees of which to use.
+        EXTERNAL_TREES: buildroot-external-mender
+        BUILDROOT_PATCH_DIR: "buildroot-external-mender/patches/buildroot/"
+        UID: 1000
+        GID: 1000
+    container_name: buildroot-mender
+    volumes:
+      - ./:/mnt
+      - buildroot-mender-ccache:/home/ccache
     environment:
       - APPLY_CONFIGS
       - CLEAN_AFTER_BUILD
@@ -20,17 +26,12 @@ services:
       - EXIT_AFTER_BUILD
       - NO_BUILD
       - VERBOSE
+    privileged: true
+    stdin_open: true
+    tty: true
     ulimits:
       nofile:
         soft: 1048576
         hard: 1048576
-    privileged: true
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./:/mnt
-      - buildroot-mender-ccache:/home/ccache
-    image: buildroot-mender:latest
-    container_name:  buildroot-mender
 volumes:
   buildroot-mender-ccache:

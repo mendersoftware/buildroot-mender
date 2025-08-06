@@ -1,18 +1,18 @@
 From cd31e72cfe183fad199a6205cf474cb26d8b69a7 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <aduskett@gmail.com>
-Date: Thu, 8 Feb 2024 11:26:47 +0100
-Subject: [PATCH] Add mender support
+Date: Wed, 6 Aug 2025 10:58:29 +0200
+Subject: [PATCH] Add mender support for uboot 2025.07
 
 Signed-off-by: Adam Duskett <aduskett@gmail.com>
 ---
  Kconfig                   |   2 +
  include/config_mender.h   |  96 ++++++++++++++++++++++++
- include/env_default.h     |   7 +-
+ include/env_default.h     |   6 +-
  include/env_mender.h      | 154 ++++++++++++++++++++++++++++++++++++++
  mender/Kconfig            | 110 +++++++++++++++++++++++++++
  scripts/Makefile.autoconf |   3 +-
  tools/env/fw_env.c        |   1 +
- 7 files changed, 370 insertions(+), 3 deletions(-)
+ 7 files changed, 369 insertions(+), 3 deletions(-)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
  create mode 100644 mender/Kconfig
@@ -21,7 +21,7 @@ diff --git a/Kconfig b/Kconfig
 index 00ed1ecc..d806b399 100644
 --- a/Kconfig
 +++ b/Kconfig
-@@ -741,3 +741,5 @@ source "lib/Kconfig"
+@@ -799,3 +799,5 @@ source "lib/Kconfig"
  source "test/Kconfig"
  
  source "tools/Kconfig"
@@ -133,24 +133,23 @@ diff --git a/include/env_default.h b/include/env_default.h
 index 2ca4a087..86c7c838 100644
 --- a/include/env_default.h
 +++ b/include/env_default.h
-@@ -12,6 +12,8 @@
+@@ -12,6 +12,7 @@
+ #include <linux/stringify.h>
  
  #include <generated/environment.h>
- 
 +#include <env_mender.h>
-+
+ 
  #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
  env_t embedded_environment __UBOOT_ENV_SECTION__(environment) = {
- 	ENV_CRC,	/* CRC Sum */
-@@ -26,6 +28,7 @@ char default_environment[] = {
+@@ -27,6 +28,7 @@ char default_environment[] = {
  #else
  const char default_environment[] = {
  #endif
-+	MENDER_ENV_SETTINGS
++MENDER_ENV_SETTINGS
  #ifndef CONFIG_USE_DEFAULT_ENV_FILE
  #ifdef	CONFIG_ENV_CALLBACK_LIST_DEFAULT
  	ENV_CALLBACK_VAR "=" CONFIG_ENV_CALLBACK_LIST_DEFAULT "\0"
-@@ -36,8 +39,8 @@ const char default_environment[] = {
+@@ -37,8 +39,8 @@ const char default_environment[] = {
  #ifdef	CONFIG_USE_BOOTARGS
  	"bootargs="	CONFIG_BOOTARGS			"\0"
  #endif
@@ -442,7 +441,7 @@ index 0ade9164..c653f1af 100644
 --- a/scripts/Makefile.autoconf
 +++ b/scripts/Makefile.autoconf
 @@ -116,7 +116,8 @@ define filechk_config_h
- 	echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\>;		\
+ 	$(if $(CONFIG_SYS_CONFIG_NAME),echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\> ;) \
  	echo \#include \<asm/config.h\>;				\
  	echo \#include \<linux/kconfig.h\>;				\
 -	echo \#include \<config_fallbacks.h\>;)
@@ -455,7 +454,7 @@ diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
 index c9a8774a..64fd2380 100644
 --- a/tools/env/fw_env.c
 +++ b/tools/env/fw_env.c
-@@ -20,6 +20,7 @@
+@@ -22,6 +22,7 @@
  #include <ctype.h>
  #include <stdio.h>
  #include <stdlib.h>
