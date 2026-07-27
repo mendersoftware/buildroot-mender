@@ -59,6 +59,8 @@ class InitParse:
             Buildroot.update(self.buildroot_path)
         for defconfig in self.env["configs"]:
             config_obj = config.parse(defconfig)
+            if not config_obj:
+                return False
             if config_obj["skip"]:
                 self.logger.info(f"Skipping {config_obj['defconfig']}")
                 continue
@@ -68,10 +70,12 @@ class InitParse:
                 return False
         if single_target:
             return self.__single_target(single_target, config)
+        self.logger.warning(f"################### {self.no_build} #############")
         for defconfig in self.env["configs"]:
             config_obj = config.parse(defconfig)
-            if not config_obj["build"] or config_obj["skip"]:
-                if self.no_build:
+            if not config_obj:
+                return False
+            if not config_obj["build"] or config_obj["skip"] or self.no_build:
                     self.logger.info(f"{config_obj['defconfig']}: Skip build step")
                     continue
             # Generate the legal information first, as to ensure the tarball is in the images
@@ -84,6 +88,13 @@ class InitParse:
             if self.clean_after_build:
                 config.clean(force=True)
         return True
+
+    def __parse_configs(self) -> None:
+        for defconfig in self.env["configs"]:
+            config_obj = self.config.parse(defconfig)
+            if not config_obj:
+                self.logger.critical(f"{defconfig}: No such file!")
+                assert FileNotFoundError
 
     def __init__(
         self,
@@ -109,3 +120,6 @@ class InitParse:
         self.fragments = None
         self.no_build = bool(no_build)
         self.clean_after_build = bool(clean_after_build)
+        self.config = Config(self.buildroot_path, self.apply_configs)
+        self.__parse_configs()
+

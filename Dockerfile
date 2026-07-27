@@ -1,4 +1,4 @@
-FROM ubuntu:noble
+FROM ubuntu:resolute
 
 ENV DEBIAN_FRONTEND=noninteractive 
 ENV TZ=US/Pacific
@@ -9,7 +9,7 @@ RUN set -e; \
   apt --allow-unauthenticated update; \
   apt --allow-unauthenticated upgrade -y; \
   apt-get install --no-install-recommends -y apt-utils locales tzdata; \
-  localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8; \
+  localedef -i en_US -c -f UTF-8 en_US.UTF-8; \
   locale-gen en_US.UTF-8; \
   ln -snf /usr/share/zoneinfo/$TZ /etc/localtime; \
   echo $TZ > /etc/timezone;
@@ -57,7 +57,6 @@ RUN set -e; \
   python3-nose2 \
   python3-pexpect \
   python3-requests \
-  qemu-kvm \
   qemu-system-x86 \
   rsync \
   subversion \
@@ -73,6 +72,11 @@ RUN set -e; \
 RUN set -e; \
   pip3 install --force --break-system-packages \
   spdx_lookup==0.3.3;
+
+# Do not use uutils
+RUN set -e; \
+  apt install -y \
+  coreutils-from-gnu coreutils-from-uutils- --allow-remove-essential
 
 # Set these arguments in the docker-compose.yml file and the docker/env file
 # if you wish to change the default values.
