@@ -1,11 +1,13 @@
 config BR2_PACKAGE_MENDER_UPDATE_MODULES
 	bool "mender-update-modules"
 	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_PACKAGE_HOST_GO_HOST_ARCH_SUPPORTS # host-mender-artifact
 	depends on BR2_TOOLCHAIN_HAS_THREADS_NPTL # boost-log
 	depends on BR2_TOOLCHAIN_SUPPORTS_ALWAYS_LOCKFREE_ATOMIC_INTS # boost-log
 	depends on !BR2_TOOLCHAIN_HAS_GCC_BUG_64735 # boost-log
 	depends on BR2_USE_MMU # libglib2
 	depends on BR2_USE_WCHAR # libglib2
+	select BR2_PACKAGE_HOST_MENDER_ARTIFACT
 	select BR2_PACKAGE_MENDER
 	help
 	  community supported Update Modules. An Update Module is an
@@ -90,6 +92,29 @@ config BR2_PACKAGE_MENDER_UPDATE_MODULES_IPK
 	    - Deploy any ipk package
 
 	  https://github.com/mendersoftware/mender-update-modules/tree/master/ipk
+
+config BR2_PACKAGE_MENDER_PERSISTENT_APP
+	bool "persistent-app"
+	help
+	  The Persistent App Update Module installs files to a
+	  user-defined directory on the persistent data partition,
+	  ensuring deployments survive rootfs A/B updates.
+
+	  This module uses the data-partition software filesystem
+	  namespace, which means version tracking in mender show-provides
+	  persists across system updates. When a rootfs update clears
+	  rootfs-image.* provides, the data-partition.* provides remain
+	  intact.
+
+	  The module supports rollback by maintaining backups on the same
+	  persistent partition.
+
+	  Example use-cases:
+	    - Deploy application files that must persist across OS updates
+	    - Deploy configuration bundles to /data
+	    - Deploy container images, ML models, or other large files to persistent storage
+
+	  https://github.com/mendersoftware/mender-update-modules/tree/master/persistent-app
 
 config BR2_PACKAGE_MENDER_UPDATE_MODULES_REBOOT
 	bool "reboot"

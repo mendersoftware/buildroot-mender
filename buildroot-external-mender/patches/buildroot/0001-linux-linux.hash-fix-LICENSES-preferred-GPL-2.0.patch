@@ -1,0 +1,37 @@
+From d0c39c63a469fd565c11459da425a38b60eba272 Mon Sep 17 00:00:00 2001
+From: Adam Duskett <adam.duskett@amarulasolutions.com>
+Date: Tue, 27 Oct 2026 12:55:19 +0100
+Subject: [PATCH 1/7] linux/linux.hash: fix LICENSES/preferred/GPL-2.0
+
+This was updated with commit 660470dc58624242e39b7fdc6290c81a4f810b1e
+
+```
+LICENSES: Replace the obsolete address of the FSF in the GPL-2.0
+The FSF does not reside in the Franklin street anymore. Let's update
+the address with the link to their website, as suggested in the latest
+revisions of their GPL-2.0 license:
+https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+Signed-off-by: Thomas Huth <thuth@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+```
+
+Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
+---
+ linux/linux.hash | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/linux/linux.hash b/linux/linux.hash
+index 07d83b02..967e8d00 100644
+--- a/linux/linux.hash
++++ b/linux/linux.hash
+@@ -12,5 +12,5 @@ sha256  b3454708b98016f02604433e41060be2c1feb595c2bddeb25292596f047f0915  linux-
+ 
+ # Licenses hashes
+ sha256  fb5a425bd3b3cd6071a3a9aff9909a859e7c1158d54d32e07658398cd67eb6a0  COPYING
+-sha256  f6b78c087c3ebdf0f3c13415070dd480a3f35d8fc76f3d02180a407c1c812f79  LICENSES/preferred/GPL-2.0
++sha256  8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa  LICENSES/preferred/GPL-2.0
+ sha256  8e378ab93586eb55135d3bc119cce787f7324f48394777d00c34fa3d0be3303f  LICENSES/exceptions/Linux-syscall-note
+-- 
+2.56.0
+

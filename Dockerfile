@@ -91,6 +91,7 @@ ARG BUILDROOT_PATCH_DIR
 ARG BUILDROOT_VERSION=2023.11.1
 ARG BUILDROOT_BRANCH=master
 ARG BUILDROOT_COMMIT
+ARG BUILDROOT_SHA256
 ARG UID
 ARG GID
 
@@ -115,6 +116,7 @@ RUN /bin/bash; \
     fi; \
   else \
     wget https://buildroot.org/downloads/buildroot-${BUILDROOT_VERSION}.tar.xz -O /home/${BUILDROOT_USER}/buildroot.tar.xz; \
+    echo "${BUILDROOT_SHA256} /home/${BUILDROOT_USER}/buildroot.tar.xz" | sha256sum --check --status; \
     mkdir -p /home/${BUILDROOT_USER}/${BUILDROOT_DIR}; \
     tar -Jxf /home/${BUILDROOT_USER}/buildroot.tar.xz --strip-components=1 -C /home/${BUILDROOT_USER}/${BUILDROOT_DIR}; \
     rm -rf /home/${BUILDROOT_USER}/buildroot.tar.xz; \

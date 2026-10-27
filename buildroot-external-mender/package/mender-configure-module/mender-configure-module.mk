@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-MENDER_CONFIGURE_MODULE_VERSION = 1.1.2
+MENDER_CONFIGURE_MODULE_VERSION = 1.1.4
 MENDER_CONFIGURE_MODULE_SITE = $(call github,mendersoftware,mender-configure-module,$(MENDER_CONFIGURE_MODULE_VERSION))
 MENDER_CONFIGURE_MODULE_LICENSE = Apache-2.0
 MENDER_CONFIGURE_MODULE_LICENSE_FILES = LICENSE

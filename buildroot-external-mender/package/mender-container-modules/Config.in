@@ -1,0 +1,21 @@
+config BR2_PACKAGE_MENDER_CONTAINER_MODULES
+	bool "mender-container-modules"
+	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
+	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_MENDER
+	help
+	  This repository contains Mender Update Modules for OTA
+	  container updates. The goal is to support multiple
+	  container runtimes and stacks with shared code backbone.
+
+	  Currently supported container stacks are:
+	    - docker-compose
+
+	  https://github.com/mendersoftware/mender-container-modules
+
+comment "mender-container-modules needs docker-cli and a toolchain w/ threads"
+	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
+	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+	depends on BR2_PACKAGE_DOCKER_CLI
+	depends on !BR2_TOOLCHAIN_HAS_THREADS

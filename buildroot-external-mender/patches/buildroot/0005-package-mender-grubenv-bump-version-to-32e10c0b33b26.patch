@@ -1,8 +1,8 @@
-From 6f5bc1dce8325fe65f6558548037b7c76ebf386a Mon Sep 17 00:00:00 2001
+From e47b172c7ebe0d776ddf89ca49b7eeffa298d5c1 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Mon, 27 Jul 2026 11:52:49 +0200
-Subject: [PATCH 3/5] package/mender-grubenv: bump version to
- ddbc5cb054c7a8245c2d6c79eb4cb60ed0ec27e4
+Date: Tue, 27 Oct 2026 13:00:56 +0100
+Subject: [PATCH 5/7] package/mender-grubenv: bump version to
+ 32e10c0b33b26277099b5ce7047896202cd18781
 
   - Update License hash due to year change.
 
@@ -13,17 +13,17 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/package/mender-grubenv/mender-grubenv.hash b/package/mender-grubenv/mender-grubenv.hash
-index d7f78449..06456f68 100644
+index d7f78449..1780c8a1 100644
 --- a/package/mender-grubenv/mender-grubenv.hash
 +++ b/package/mender-grubenv/mender-grubenv.hash
 @@ -1,3 +1,3 @@
  # Locally computed
 -sha256  0bac59698165a8dafdd282610246addd7bebf41612efa88c77b779f8ffb5ed9d  mender-grubenv-38e5043a215f696d126a2d707c9db9aeb93cfb2d.tar.gz
 -sha256  d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
-+sha256  9200dfc8ce8d9e5fae13947857fec44961df87c5bee92f90e37049279a94fb6f  mender-grubenv-ddbc5cb054c7a8245c2d6c79eb4cb60ed0ec27e4.tar.gz
++sha256  88c9cc9ea375b8391e6a2ab716e758c3ef1d10145496d7abcea0f1a7a6867a97  mender-grubenv-32e10c0b33b26277099b5ce7047896202cd18781.tar.gz
 +sha256  d7e8fd4ad05371007d60285c309ba7a7ce3e61029b843f949fbb9ec79dc9eb47  LICENSE
 diff --git a/package/mender-grubenv/mender-grubenv.mk b/package/mender-grubenv/mender-grubenv.mk
-index a47531fe..d9315980 100644
+index a47531fe..9604958f 100644
 --- a/package/mender-grubenv/mender-grubenv.mk
 +++ b/package/mender-grubenv/mender-grubenv.mk
 @@ -4,7 +4,7 @@
@@ -31,10 +31,10 @@ index a47531fe..d9315980 100644
  ################################################################################
  
 -MENDER_GRUBENV_VERSION = 38e5043a215f696d126a2d707c9db9aeb93cfb2d
-+MENDER_GRUBENV_VERSION = ddbc5cb054c7a8245c2d6c79eb4cb60ed0ec27e4
++MENDER_GRUBENV_VERSION = 32e10c0b33b26277099b5ce7047896202cd18781
  MENDER_GRUBENV_SITE = $(call github,mendersoftware,grub-mender-grubenv,$(MENDER_GRUBENV_VERSION))
  MENDER_GRUBENV_LICENSE = Apache-2.0
  MENDER_GRUBENV_LICENSE_FILES = LICENSE
 -- 
-2.55.0
+2.56.0
 

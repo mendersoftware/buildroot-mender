@@ -1,7 +1,7 @@
-From 417af9a2b0da83cc123a6bff3580712fd6ecabbc Mon Sep 17 00:00:00 2001
+From b0bdad53ddf70fd0cb34f2b00e5ab3843a25ced1 Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Mon, 27 Jul 2026 12:46:58 +0200
-Subject: [PATCH 5/5] package/mender: bump package version to 5.1.0
+Date: Tue, 27 Oct 2026 13:10:18 +0100
+Subject: [PATCH 7/7] package/mender: bump package version to 5.2.0
 
 Starting with Mender version 4, the program is rewritten from Go to C++ using
 CMake.
@@ -53,13 +53,13 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
  package/mender/Config.in                     |  40 +++--
  package/mender/S42mender                     |  44 -----
- package/mender/S42mender-update              |  46 +++++
+ package/mender/S42mender-update              |  46 ++++++
  package/mender/mender-client.service         |  13 --
  package/mender/mender.hash                   |  52 ++----
- package/mender/mender.mk                     | 166 ++++++++++---------
+ package/mender/mender.mk                     | 161 ++++++++++---------
  package/mender/server.crt                    |  22 ---
  support/testing/tests/package/test_mender.py |  56 +++++--
- 8 files changed, 213 insertions(+), 226 deletions(-)
+ 8 files changed, 211 insertions(+), 223 deletions(-)
  delete mode 100644 package/mender/S42mender
  create mode 100644 package/mender/S42mender-update
  delete mode 100644 package/mender/mender-client.service
@@ -253,14 +253,14 @@ index 47e43999..00000000
 -[Install]
 -WantedBy=multi-user.target
 diff --git a/package/mender/mender.hash b/package/mender/mender.hash
-index 17fe08c8..833c1b28 100644
+index 17fe08c8..1aa8fb63 100644
 --- a/package/mender/mender.hash
 +++ b/package/mender/mender.hash
 @@ -1,47 +1,27 @@
  # Locally computed:
 -sha256  35e369759b8d4f012153e538b5daf1e0cebe842205811e708332c5a092270ac5  mender-3.5.3-go2.tar.gz
-+sha256  6e9df7dd280a0917152260e1e486eafda72b9c7c6c8e7ee82242208dcffaf60a  mender-54d57fc32abd0bb1a8f0336d6d5ab624d3c5ac49-git4.tar.gz
-+sha256  669430e3ffb3ed263e4ddfe2631c3c5f30ada6b6d0a4ac55bfb7d4ed7f5d6395  LIC_FILES_CHKSUM.sha256
++sha256  436ae559358f29c672b98ca77b953936ba6ef51455466fb5ed0ced7ae77fc226  mender-5.2.0.tar.gz
++sha256  4d3409e4f8f7f3b9de5da7fee7c03e36a2381a02b2e318702485fc993a735cc9  LIC_FILES_CHKSUM.sha256
  
  # Vendor licenses
  # Generated with sed '/^[A-Za-z0-9_]/s/^/sha256  /' LIC_FILES_CHKSUM.sha256
@@ -319,30 +319,27 @@ index 17fe08c8..833c1b28 100644
 -# sha256 of all the vendor licenses combined
 -sha256  86407bd98d5ea7fb0f09ab771c3333e975d06565b809a2dd95f864dc1e3a09b3  LIC_FILES_CHKSUM.sha256
 +# BSD-3
-+sha256  9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138  src/common/vendor/yaml-cpp/test/googletest-1.13.0/LICENSE
++sha256  9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138  src/common/vendor/yaml-cpp/test/googletest-1.16.0/LICENSE
 diff --git a/package/mender/mender.mk b/package/mender/mender.mk
-index 1050277d..8e1085f5 100644
+index 1050277d..da72572a 100644
 --- a/package/mender/mender.mk
 +++ b/package/mender/mender.mk
-@@ -4,112 +4,116 @@
+@@ -4,112 +4,117 @@
  #
  ################################################################################
  
 -MENDER_VERSION = 3.5.3
 -MENDER_SITE = $(call github,mendersoftware,mender,$(MENDER_VERSION))
 -MENDER_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, OLDAP-2.8
-+# 5.1.0
-+MENDER_VERSION = 54d57fc32abd0bb1a8f0336d6d5ab624d3c5ac49
-+MENDER_SITE = https://github.com/mendersoftware/mender.git
-+MENDER_SITE_METHOD = git
-+MENDER_GIT_SUBMODULES = YES
++MENDER_VERSION = 5.2.0
++MENDER_SITE = https://github.com/mendersoftware/mender/releases/download/$(MENDER_VERSION)
 +MENDER_LICENSE = Apache-2.0, BSL-1.0, BSD-3-Clause, CC0-1.0, MIT, Unlicense
  MENDER_CPE_ID_VENDOR = northern.tech
 -# CVE-2024-46948 only affects mender-server
 -MENDER_IGNORE_CVES = CVE-2024-46948
--
--# Vendor license paths generated with:
--#    awk '{print $2}' LIC_FILES_CHKSUM.sha256 | grep vendor
+ 
+ # Vendor license paths generated with:
+ #    awk '{print $2}' LIC_FILES_CHKSUM.sha256 | grep vendor
  MENDER_LICENSE_FILES = \
  	LICENSE \
  	LIC_FILES_CHKSUM.sha256 \
@@ -390,7 +387,7 @@ index 1050277d..8e1085f5 100644
 +	src/common/vendor/lmdbxx/UNLICENSE \
 +	src/common/vendor/expected/COPYING \
 +	src/common/vendor/optional-lite/LICENSE.txt \
-+	src/common/vendor/yaml-cpp/test/googletest-1.13.0/LICENSE
++	src/common/vendor/yaml-cpp/test/googletest-1.16.0/LICENSE
 +
 +MENDER_DEPENDENCIES += \
 +	host-pkgconf \
@@ -445,8 +442,9 @@ index 1050277d..8e1085f5 100644
  MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_CONFIG_FILES
  
 +MENDER_CONF_OPTS += \
++	-DMENDER_EMBED_MENDER_AUTH=OFF \
 +	-DMENDER_USE_DBUS=ON \
-+	-DMENDER_EMBED_MENDER_AUTH=OFF
++	-DMENDER_VERSION=$(MENDER_VERSION)
 +
 +ifeq ($(BR2_PACKAGE_GZIP),y)
 +MENDER_DEPENDENCIES += gzip
@@ -626,5 +624,5 @@ index 14440c95..74de67d0 100644
          self.assertEqual(exit_code, 1)
  
 -- 
-2.55.0
+2.56.0
 
