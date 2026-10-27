@@ -1,7 +1,7 @@
-From b8aa05ddc5ecd866272fbb194948983aaa8f198d Mon Sep 17 00:00:00 2001
+From 702009b95c4def3a6791009a4c44fbdf82c4662b Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Mon, 27 Jul 2026 11:50:18 +0200
-Subject: [PATCH 1/5] package/mender-artifact: bump version to 4.4.1
+Date: Tue, 27 Oct 2026 12:59:00 +0100
+Subject: [PATCH 3/7] package/mender-artifact: bump version to 4.4.2
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
@@ -10,14 +10,14 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  2 files changed, 73 insertions(+), 27 deletions(-)
 
 diff --git a/package/mender-artifact/mender-artifact.hash b/package/mender-artifact/mender-artifact.hash
-index c4209f44..5dffdbb7 100644
+index c4209f44..bf00b264 100644
 --- a/package/mender-artifact/mender-artifact.hash
 +++ b/package/mender-artifact/mender-artifact.hash
 @@ -1,6 +1,6 @@
  # Locally computed:
 -sha256  fc11754f12d9104fce5b62738739d07514b4bd975f5e87d411d4e381533a2c6d  mender-artifact-4.0.0-go2.tar.gz
 -sha256  d4f369175698aa60b6e0a99413663af3212dc4c539de42ee8a9cda15d4ace40f  LIC_FILES_CHKSUM.sha256
-+sha256  c7002052028496f230c34ef6f0488bf5e8ca32b075b7a96555532fe928aed984  mender-artifact-4.4.1-go2.tar.gz
++sha256  d8e9e18e48a2124e5e367ffafb3313a3dcba7a8a8a8b162b1dcb8791964c6385  mender-artifact-4.4.2-go2.tar.gz
 +sha256  0e7c48f6471ca81a2fce9e3f605dffeb0385afd4dc3b5eb7f4e86ece4aa9b068  LIC_FILES_CHKSUM.sha256
  
  # License hash extracted from LIC_FILES_CHKSUM.sha256 using the
@@ -125,7 +125,7 @@ index c4209f44..5dffdbb7 100644
  sha256  a830016911a348a54e89bd54f2f8b0d8fffdeac20aecfba8e36ebbf38a03f5ff  vendor/github.com/hashicorp/go-multierror/LICENSE
 +sha256  8108e14b5cb2b6bcd51583d3849ef0c2b5c4de61758256c20308bc70d1775dbb  vendor/github.com/felixge/httpsnoop/LICENSE.txt
 diff --git a/package/mender-artifact/mender-artifact.mk b/package/mender-artifact/mender-artifact.mk
-index 4c6fa272..bb48b7a4 100644
+index 4c6fa272..3e67604a 100644
 --- a/package/mender-artifact/mender-artifact.mk
 +++ b/package/mender-artifact/mender-artifact.mk
 @@ -4,9 +4,11 @@
@@ -133,7 +133,7 @@ index 4c6fa272..bb48b7a4 100644
  ################################################################################
  
 -HOST_MENDER_ARTIFACT_VERSION = 4.0.0
-+HOST_MENDER_ARTIFACT_VERSION = 4.4.1
++HOST_MENDER_ARTIFACT_VERSION = 4.4.2
  HOST_MENDER_ARTIFACT_SITE = $(call github,mendersoftware,mender-artifact,$(HOST_MENDER_ARTIFACT_VERSION))
  HOST_MENDER_ARTIFACT_LICENSE = Apache2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, MPL-2.0
 +# Vendor license paths generated with:
@@ -229,5 +229,5 @@ index 4c6fa272..bb48b7a4 100644
  HOST_MENDER_ARTIFACT_DEPENDENCIES = host-pkgconf host-openssl host-xz
  
 -- 
-2.55.0
+2.56.0
 

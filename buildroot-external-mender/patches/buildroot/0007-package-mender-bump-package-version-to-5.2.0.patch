@@ -1,7 +1,7 @@
-From 417af9a2b0da83cc123a6bff3580712fd6ecabbc Mon Sep 17 00:00:00 2001
+From 21531784371cde26a419c2c6939ee05bab0a71ec Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Mon, 27 Jul 2026 12:46:58 +0200
-Subject: [PATCH 5/5] package/mender: bump package version to 5.1.0
+Date: Tue, 27 Oct 2026 13:10:18 +0100
+Subject: [PATCH 7/7] package/mender: bump package version to 5.2.0
 
 Starting with Mender version 4, the program is rewritten from Go to C++ using
 CMake.
@@ -51,20 +51,204 @@ MINOR:
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
- package/mender/Config.in                     |  40 +++--
- package/mender/S42mender                     |  44 -----
- package/mender/S42mender-update              |  46 +++++
- package/mender/mender-client.service         |  13 --
- package/mender/mender.hash                   |  52 ++----
- package/mender/mender.mk                     | 166 ++++++++++---------
- package/mender/server.crt                    |  22 ---
- support/testing/tests/package/test_mender.py |  56 +++++--
- 8 files changed, 213 insertions(+), 226 deletions(-)
+ board/mender/x86_64/linux.config              |   5 +-
+ .../etc/udev/rules.d/99-root-symlink.rules    |   1 +
+ board/mender/x86_64/post-build.sh             |  12 +-
+ board/mender/x86_64/post-image-efi.sh         |  18 +-
+ configs/mender_x86_64_efi_defconfig           |  12 +-
+ package/mender/Config.in                      |  40 +++--
+ package/mender/S42mender                      |  44 -----
+ package/mender/mender-client.service          |  13 --
+ package/mender/mender.hash                    |  52 ++----
+ package/mender/mender.mk                      | 165 +++++++++---------
+ package/mender/server.crt                     |  22 ---
+ support/testing/tests/package/test_mender.py  |  87 +++++----
+ .../tests/package/test_mender/post-build.sh   |  11 +-
+ .../rootfs-overlay/etc/mender/mender.conf     |  11 ++
+ 14 files changed, 215 insertions(+), 278 deletions(-)
+ create mode 100644 board/mender/x86_64/overlay/etc/udev/rules.d/99-root-symlink.rules
  delete mode 100644 package/mender/S42mender
- create mode 100644 package/mender/S42mender-update
  delete mode 100644 package/mender/mender-client.service
  delete mode 100644 package/mender/server.crt
+ create mode 100644 support/testing/tests/package/test_mender/rootfs-overlay/etc/mender/mender.conf
 
+diff --git a/board/mender/x86_64/linux.config b/board/mender/x86_64/linux.config
+index f17fc18e..b758c6d4 100644
+--- a/board/mender/x86_64/linux.config
++++ b/board/mender/x86_64/linux.config
+@@ -3,6 +3,7 @@ CONFIG_SMP=y
+ CONFIG_HYPERVISOR_GUEST=y
+ CONFIG_PARAVIRT=y
+ CONFIG_EFI=y
++# CONFIG_GCC_PLUGINS is not set
+ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ CONFIG_NET=y
+@@ -10,6 +11,8 @@ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
+ CONFIG_NETFILTER=y
++CONFIG_NETFILTER_XTABLES_LEGACY=y
++CONFIG_IP_NF_IPTABLES_LEGACY=y
+ CONFIG_IP_NF_IPTABLES=y
+ CONFIG_IP_NF_FILTER=y
+ CONFIG_CFG80211=m
+@@ -35,7 +38,6 @@ CONFIG_RT2800USB_RT3573=y
+ CONFIG_RT2800USB_RT53XX=y
+ CONFIG_RT2800USB_RT55XX=y
+ # CONFIG_RTL_CARDS is not set
+-CONFIG_RTL8XXXU=m
+ CONFIG_INPUT_EVDEV=y
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+@@ -43,7 +45,6 @@ CONFIG_VIRTIO_CONSOLE=y
+ CONFIG_HW_RANDOM_VIRTIO=m
+ CONFIG_DRM=y
+ CONFIG_DRM_VIRTIO_GPU=y
+-CONFIG_FB_VESA=y
+ CONFIG_SOUND=y
+ CONFIG_SND=y
+ CONFIG_USB=y
+diff --git a/board/mender/x86_64/overlay/etc/udev/rules.d/99-root-symlink.rules b/board/mender/x86_64/overlay/etc/udev/rules.d/99-root-symlink.rules
+new file mode 100644
+index 00000000..7d2ae8cb
+--- /dev/null
++++ b/board/mender/x86_64/overlay/etc/udev/rules.d/99-root-symlink.rules
+@@ -0,0 +1 @@
++SUBSYSTEM=="block", ACTION=="add|change", PROGRAM="/bin/grep -q root=/dev/%k /proc/cmdline", SYMLINK+="root"
+diff --git a/board/mender/x86_64/post-build.sh b/board/mender/x86_64/post-build.sh
+index 9e909e92..3989b58b 100755
+--- a/board/mender/x86_64/post-build.sh
++++ b/board/mender/x86_64/post-build.sh
+@@ -1,11 +1,11 @@
+ #!/usr/bin/env bash
+ set -e
+-DEVICE_TYPE="buildroot-x86_64"
++COMPATIBLE_TYPES="buildroot-x86_64"
+ 
+ parse_args() {
+     local o O opts
+-    o='a:o:d:'
+-    O='artifact-name:,data-part-size:,device-type:'
++    o='a:o:c:'
++    O='artifact-name:,data-part-size:,compatible-types:'
+     opts="$(getopt -o "${o}" -l "${O}" -- "${@}")"
+     eval set -- "${opts}"
+     while [ ${#} -gt 0 ]; do
+@@ -14,8 +14,8 @@ parse_args() {
+             # Ignored to have same options as other scripts
+             shift 2
+             ;;
+-        (-d|--device-type)
+-            DEVICE_TYPE="${2}"; shift 2
++        (-c|--compatible-types)
++            COMPATIBLE_TYPES="${2}"; shift 2
+             ;;
+         (-a|--artifact-name)
+             # Ignored to have same options as other scripts
+@@ -42,7 +42,7 @@ mender_fixup() {
+ main() {
+     parse_args "${@}"
+     mender_fixup
+-    echo "device_type=${DEVICE_TYPE}" > "${TARGET_DIR}/etc/mender/device_type"
++    echo "device_type=${COMPATIBLE_TYPES}" > "${TARGET_DIR}/etc/mender/device_type"
+ }
+ 
+ main "${@}"
+diff --git a/board/mender/x86_64/post-image-efi.sh b/board/mender/x86_64/post-image-efi.sh
+index a3e262f8..5f0b5a83 100755
+--- a/board/mender/x86_64/post-image-efi.sh
++++ b/board/mender/x86_64/post-image-efi.sh
+@@ -3,14 +3,14 @@ set -e
+ BOARD_DIR="$(realpath "$(dirname "$0")")"
+ DATA_PART="${BINARIES_DIR}"/data-part
+ DATA_PART_SIZE="32M"
+-DEVICE_TYPE="buildroot-x86_64"
++COMPATIBLE_TYPES="buildroot-x86_64"
+ ARTIFACT_NAME="1.0"
+ 
+ # Parse arguments.
+ parse_args() {
+     local o O opts
+-    o='a:o:d:'
+-    O='artifact-name:,data-part-size:,device-type:'
++    o='a:o:c:'
++    O='artifact-name:,data-part-size:,compatible-types:'
+     opts="$(getopt -o "${o}" -l "${O}" -- "${@}")"
+     eval set -- "${opts}"
+     while [ ${#} -gt 0 ]; do
+@@ -18,8 +18,8 @@ parse_args() {
+         (-o|--data-part-size)
+             DATA_PART_SIZE="${2}"; shift 2
+             ;;
+-        (-d|--device-type)
+-            DEVICE_TYPE="${2}"; shift 2
++        (-c|--compatible-types)
++            COMPATIBLE_TYPES="${2}"; shift 2
+             ;;
+         (-a|--artifact-name)
+             ARTIFACT_NAME="${2}"; shift 2
+@@ -55,7 +55,7 @@ generate_mender_bootstrap_artifact() {
+     write bootstrap-artifact \
+     --compression none \
+     --artifact-name "${ARTIFACT_NAME}" \
+-    --device-type "${DEVICE_TYPE}" \
++    --compatible-types "${COMPATIBLE_TYPES}" \
+     --provides "rootfs-image.version:${ARTIFACT_NAME}" \
+     --provides "rootfs-image.checksum:${img_checksum}" \
+     --clears-provides "rootfs-image.*" \
+@@ -65,14 +65,14 @@ generate_mender_bootstrap_artifact() {
+ 
+ # Create a mender image.
+ generate_mender_image() {
+-    echo "Creating ${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender"
++    echo "Creating ${BINARIES_DIR}/${ARTIFACT_NAME}.mender"
+     "${HOST_DIR}/bin/mender-artifact" \
+         write rootfs-image \
+         --compression none \
+-        -t "${DEVICE_TYPE}" \
++        -c "${COMPATIBLE_TYPES}" \
+         -n "${BR2_VERSION}" \
+         -f "${BINARIES_DIR}/rootfs.ext2" \
+-        -o "${BINARIES_DIR}/${DEVICE_TYPE}-${ARTIFACT_NAME}.mender"
++        -o "${BINARIES_DIR}/${ARTIFACT_NAME}.mender"
+ }
+ 
+ generate_image() {
+diff --git a/configs/mender_x86_64_efi_defconfig b/configs/mender_x86_64_efi_defconfig
+index d0e0d8a3..725f8ae6 100644
+--- a/configs/mender_x86_64_efi_defconfig
++++ b/configs/mender_x86_64_efi_defconfig
+@@ -1,15 +1,15 @@
+ BR2_x86_64=y
+-BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6=y
+-BR2_INIT_SYSV=y
+-BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_EUDEV=y
++BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_12=y
++BR2_TOOLCHAIN_BUILDROOT_CXX=y
++BR2_INIT_SYSTEMD=y
+ BR2_TARGET_GENERIC_GETTY_PORT="ttyS0"
+ BR2_ROOTFS_OVERLAY="board/mender/x86_64/overlay"
+ BR2_ROOTFS_POST_BUILD_SCRIPT="board/mender/x86_64/post-build.sh"
+ BR2_ROOTFS_POST_IMAGE_SCRIPT="board/mender/x86_64/post-image-efi.sh"
+-BR2_ROOTFS_POST_SCRIPT_ARGS="--data-part-size=32M --device-type=buildroot-x86_64 --artifact-name=1.0"
++BR2_ROOTFS_POST_SCRIPT_ARGS="--data-part-size=32M --compatible-types=buildroot-x86_64 --artifact-name=1.0"
+ BR2_LINUX_KERNEL=y
+ BR2_LINUX_KERNEL_CUSTOM_VERSION=y
+-BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.6.49"
++BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.18.59"
+ BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
+ BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="board/mender/x86_64/linux.config"
+ BR2_LINUX_KERNEL_INSTALL_TARGET=y
+@@ -42,7 +42,7 @@ BR2_PACKAGE_MENDER_GRUBENV=y
+ BR2_PACKAGE_MENDER_GRUBENV_DEFINES="board/mender/x86_64/mender_grubenv_defines"
+ BR2_TARGET_ROOTFS_EXT2=y
+ BR2_TARGET_ROOTFS_EXT2_4=y
+-BR2_TARGET_ROOTFS_EXT2_SIZE="128M"
++BR2_TARGET_ROOTFS_EXT2_SIZE="256M"
+ # BR2_TARGET_ROOTFS_TAR is not set
+ BR2_TARGET_GRUB2=y
+ BR2_TARGET_GRUB2_X86_64_EFI=y
 diff --git a/package/mender/Config.in b/package/mender/Config.in
 index c9b9d0b7..d4685986 100644
 --- a/package/mender/Config.in
@@ -181,58 +365,6 @@ index 70116ed4..00000000
 -esac
 -
 -exit $?
-diff --git a/package/mender/S42mender-update b/package/mender/S42mender-update
-new file mode 100644
-index 00000000..9044188b
---- /dev/null
-+++ b/package/mender/S42mender-update
-@@ -0,0 +1,46 @@
-+#!/bin/sh
-+#
-+# Starts mender-update service.
-+#
-+DAEMON="mender-update"
-+DAEMON_PATH="/usr/bin/mender-update"
-+PIDFILE="/var/run/${DAEMON}.pid"
-+DAEMON_ARGS="--log-file=/var/log/${DAEMON} daemon"
-+
-+start() {
-+	printf "Starting %s service: " "${DAEMON}"
-+	umask 077
-+	# We want word splitting for daemon args.
-+	# shellcheck disable=SC2086
-+	start-stop-daemon -bmSqp "${PIDFILE}" -x "${DAEMON_PATH}" -- ${DAEMON_ARGS}
-+	status=$?
-+	[ "${status}" = 0 ] && echo "OK" || echo "FAIL"
-+}
-+
-+stop() {
-+	printf "Stopping %s service: " "${DAEMON}"
-+	start-stop-daemon -Kqp "${PIDFILE}"
-+	status=$?
-+	[ "${status}" = 0 ] && echo "OK" || echo "FAIL"
-+}
-+restart() {
-+	stop
-+	start
-+}
-+
-+case "$1" in
-+	start)
-+		start
-+		;;
-+	stop)
-+		stop
-+		;;
-+	restart|reload)
-+		restart
-+		;;
-+	*)
-+		echo "Usage: $0 {start|stop|reload|restart}"
-+		exit 1
-+esac
-+
-+exit $?
 diff --git a/package/mender/mender-client.service b/package/mender/mender-client.service
 deleted file mode 100644
 index 47e43999..00000000
@@ -253,14 +385,14 @@ index 47e43999..00000000
 -[Install]
 -WantedBy=multi-user.target
 diff --git a/package/mender/mender.hash b/package/mender/mender.hash
-index 17fe08c8..833c1b28 100644
+index 17fe08c8..1aa8fb63 100644
 --- a/package/mender/mender.hash
 +++ b/package/mender/mender.hash
 @@ -1,47 +1,27 @@
  # Locally computed:
 -sha256  35e369759b8d4f012153e538b5daf1e0cebe842205811e708332c5a092270ac5  mender-3.5.3-go2.tar.gz
-+sha256  6e9df7dd280a0917152260e1e486eafda72b9c7c6c8e7ee82242208dcffaf60a  mender-54d57fc32abd0bb1a8f0336d6d5ab624d3c5ac49-git4.tar.gz
-+sha256  669430e3ffb3ed263e4ddfe2631c3c5f30ada6b6d0a4ac55bfb7d4ed7f5d6395  LIC_FILES_CHKSUM.sha256
++sha256  436ae559358f29c672b98ca77b953936ba6ef51455466fb5ed0ced7ae77fc226  mender-5.2.0.tar.gz
++sha256  4d3409e4f8f7f3b9de5da7fee7c03e36a2381a02b2e318702485fc993a735cc9  LIC_FILES_CHKSUM.sha256
  
  # Vendor licenses
  # Generated with sed '/^[A-Za-z0-9_]/s/^/sha256  /' LIC_FILES_CHKSUM.sha256
@@ -319,30 +451,27 @@ index 17fe08c8..833c1b28 100644
 -# sha256 of all the vendor licenses combined
 -sha256  86407bd98d5ea7fb0f09ab771c3333e975d06565b809a2dd95f864dc1e3a09b3  LIC_FILES_CHKSUM.sha256
 +# BSD-3
-+sha256  9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138  src/common/vendor/yaml-cpp/test/googletest-1.13.0/LICENSE
++sha256  9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138  src/common/vendor/yaml-cpp/test/googletest-1.16.0/LICENSE
 diff --git a/package/mender/mender.mk b/package/mender/mender.mk
-index 1050277d..8e1085f5 100644
+index 1050277d..03e59f6a 100644
 --- a/package/mender/mender.mk
 +++ b/package/mender/mender.mk
-@@ -4,112 +4,116 @@
+@@ -4,112 +4,121 @@
  #
  ################################################################################
  
 -MENDER_VERSION = 3.5.3
 -MENDER_SITE = $(call github,mendersoftware,mender,$(MENDER_VERSION))
 -MENDER_LICENSE = Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, OLDAP-2.8
-+# 5.1.0
-+MENDER_VERSION = 54d57fc32abd0bb1a8f0336d6d5ab624d3c5ac49
-+MENDER_SITE = https://github.com/mendersoftware/mender.git
-+MENDER_SITE_METHOD = git
-+MENDER_GIT_SUBMODULES = YES
++MENDER_VERSION = 5.2.0
++MENDER_SITE = https://github.com/mendersoftware/mender/releases/download/$(MENDER_VERSION)
 +MENDER_LICENSE = Apache-2.0, BSL-1.0, BSD-3-Clause, CC0-1.0, MIT, Unlicense
  MENDER_CPE_ID_VENDOR = northern.tech
 -# CVE-2024-46948 only affects mender-server
 -MENDER_IGNORE_CVES = CVE-2024-46948
--
--# Vendor license paths generated with:
--#    awk '{print $2}' LIC_FILES_CHKSUM.sha256 | grep vendor
+ 
+ # Vendor license paths generated with:
+ #    awk '{print $2}' LIC_FILES_CHKSUM.sha256 | grep vendor
  MENDER_LICENSE_FILES = \
  	LICENSE \
  	LIC_FILES_CHKSUM.sha256 \
@@ -390,7 +519,7 @@ index 1050277d..8e1085f5 100644
 +	src/common/vendor/lmdbxx/UNLICENSE \
 +	src/common/vendor/expected/COPYING \
 +	src/common/vendor/optional-lite/LICENSE.txt \
-+	src/common/vendor/yaml-cpp/test/googletest-1.13.0/LICENSE
++	src/common/vendor/yaml-cpp/test/googletest-1.16.0/LICENSE
 +
 +MENDER_DEPENDENCIES += \
 +	host-pkgconf \
@@ -406,6 +535,7 @@ index 1050277d..8e1085f5 100644
 +MENDER_INSTALL_TARGET_OPTS = \
 +	install-bin \
 +	install-dbus \
++	install-dbus-service-files \
 +	install-identity-scripts \
 +	install-inventory-network-scripts \
 +	install-inventory-scripts \
@@ -445,8 +575,10 @@ index 1050277d..8e1085f5 100644
  MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_CONFIG_FILES
  
 +MENDER_CONF_OPTS += \
++	-DMENDER_EMBED_MENDER_AUTH=OFF \
 +	-DMENDER_USE_DBUS=ON \
-+	-DMENDER_EMBED_MENDER_AUTH=OFF
++	-DMENDER_DOWNLOAD_GTEST=OFF \
++	-DMENDER_VERSION=$(MENDER_VERSION)
 +
 +ifeq ($(BR2_PACKAGE_GZIP),y)
 +MENDER_DEPENDENCIES += gzip
@@ -491,12 +623,14 @@ index 1050277d..8e1085f5 100644
 +endef
 +MENDER_POST_INSTALL_TARGET_HOOKS += += MENDER_INSTALL_MODULES_GEN
 +
-+define MENDER_INSTALL_MISSING_FILES
++# Cmake does not install libtiny-process-library leading to the error:
++# libtiny-process-library.so: cannot open shared object file
++define MENDER_INSTALL_LIBTINY_PROC_SO
 +	$(INSTALL) -D -m 0755 \
 +		$(@D)/src/common/vendor/tiny-process-library/libtiny-process-library.so \
 +	$(TARGET_DIR)/usr/lib/libtiny-process-library.so
 +endef
-+MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_MISSING_FILES
++MENDER_POST_INSTALL_TARGET_HOOKS += MENDER_INSTALL_LIBTINY_PROC_SO
 +
 +define MENDER_INSTALL_TARGET_CMDS
 +	$(TARGET_MAKE_ENV) \
@@ -551,12 +685,14 @@ index 79a57e15..00000000
 -h0fy7niBbIQ=
 ------END CERTIFICATE-----
 diff --git a/support/testing/tests/package/test_mender.py b/support/testing/tests/package/test_mender.py
-index 14440c95..74de67d0 100644
+index 14440c95..dea32b16 100644
 --- a/support/testing/tests/package/test_mender.py
 +++ b/support/testing/tests/package/test_mender.py
-@@ -4,31 +4,53 @@ import infra.basetest
+@@ -3,45 +3,60 @@ import os
+ import infra.basetest
  
  
++# gitlab-runner: large
  class TestMenderInfra(infra.basetest.BRTest):
 -    config = infra.basetest.BASIC_TOOLCHAIN_CONFIG + \
 -             """
@@ -572,26 +708,26 @@ index 14440c95..74de67d0 100644
 +    # infra.basetest.BASIC_TOOLCHAIN_CONFIG cannot be used as it does
 +    # not include BR2_TOOLCHAIN_SUPPORTS_ALWAYS_LOCKFREE_ATOMIC_INTS
 +    # needed by mender. This config also uses an ext4 rootfs as
-+    # the default 128MB is too small for mender and systemd.
++    # the default 128MB is too small for an image with mender and systemd.
 +    config = \
 +        """
 +        BR2_x86_64=y
 +        BR2_x86_corei7=y
 +        BR2_TOOLCHAIN_EXTERNAL=y
 +        BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_X86_64_CORE_I7_GLIBC_STABLE=y
++        BR2_INIT_SYSTEMD=y
 +        BR2_LINUX_KERNEL=y
 +        BR2_LINUX_KERNEL_CUSTOM_VERSION=y
-+        BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.18.40"
++        BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.18.59"
 +        BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
 +        BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="board/mender/x86_64/linux.config"
 +        BR2_PACKAGE_MENDER=y
 +        BR2_ROOTFS_POST_BUILD_SCRIPT="{}"
 +        BR2_ROOTFS_OVERLAY="{}"
-+        BR2_INIT_SYSTEMD=y
 +        BR2_PACKAGE_HOST_MENDER_ARTIFACT=y
 +        BR2_TARGET_ROOTFS_EXT2=y
 +        BR2_TARGET_ROOTFS_EXT2_4=y
-+        BR2_TARGET_ROOTFS_EXT2_SIZE="256M"5
++        BR2_TARGET_ROOTFS_EXT2_SIZE="256M"
 +        # BR2_TARGET_ROOTFS_TAR is not set
 +        """.format(
 +           infra.filepath("tests/package/test_mender/post-build.sh"),
@@ -613,7 +749,9 @@ index 14440c95..74de67d0 100644
          self.emulator.login()
  
      def run_mender_test(self):
-         self.assertRunOk("ps aux | egrep [m]ender")
+-        self.assertRunOk("ps aux | egrep [m]ender")
++        output, _ = self.emulator.run("systemctl is-active mender-client")
++        self.assertEqual(output[0], "active")
  
          # Check if a simple Mender command is correctly executed
 -        self.assertRunOk("mender -log-level debug show-artifact")
@@ -625,6 +763,94 @@ index 14440c95..74de67d0 100644
          _, exit_code = self.emulator.run(cmd)
          self.assertEqual(exit_code, 1)
  
+ 
+-class TestMenderRW(TestMenderInfra):
+-    def test_run(self):
+-        TestMenderInfra.base_test_run(self)
+-
+-        # Check if the Daemon is running
+-        self.assertRunOk("ls /var/run/mender.pid")
+-        self.run_mender_test()
+-
+-
+ class TestMenderRO(TestMenderInfra):
+     config = \
+         """
+@@ -51,22 +66,4 @@ class TestMenderRO(TestMenderInfra):
+ 
+     def test_run(self):
+         TestMenderInfra.base_test_run(self)
+-
+-        # Check if the Daemon is running
+-        self.assertRunOk("ls /var/run/mender.pid")
+-        self.run_mender_test()
+-
+-
+-# gitlab-runner: large
+-class TestMenderSystemd(TestMenderInfra):
+-    config = \
+-        """
+-        {}
+-        BR2_INIT_SYSTEMD=y
+-        """.format(TestMenderInfra.config)
+-
+-    def test_run(self):
+-        TestMenderInfra.base_test_run(self)
+-        output, _ = self.emulator.run("systemctl is-active mender-client")
+-        self.assertEqual(output[0], "active")
+         self.run_mender_test()
+diff --git a/support/testing/tests/package/test_mender/post-build.sh b/support/testing/tests/package/test_mender/post-build.sh
+index 1afa2310..f27b0f94 100755
+--- a/support/testing/tests/package/test_mender/post-build.sh
++++ b/support/testing/tests/package/test_mender/post-build.sh
+@@ -1,14 +1,18 @@
+ #!/usr/bin/env bash
+ set -e
+-DEVICE_TYPE="buildroot-arm"
++COMPATIBLE_TYPE="buildroot-arm"
+ ARTIFACT_NAME="RUNTIME_TEST_ARTIFACT_NAME"
+ 
+ generate_mender_bootstrap_artifact() {
++  img_checksum=$(sha256sum "${BINARIES_DIR}"/rootfs.cpio |awk '{print $1}')
++
+   "${HOST_DIR}"/bin/mender-artifact \
+     write bootstrap-artifact \
++    --compression none \
+     --artifact-name "${ARTIFACT_NAME}" \
+-    --device-type "${DEVICE_TYPE}" \
++    --compatible-types "${COMPATIBLE_TYPE}" \
+     --provides "rootfs-image.version:${ARTIFACT_NAME}" \
++    --provides "rootfs-image.checksum:${img_checksum}" \
+     --clears-provides "rootfs-image.*" \
+     --output-path "${TARGET_DIR}"/var/lib/mender/bootstrap.mender \
+     --version 3
+@@ -17,8 +21,7 @@ generate_mender_bootstrap_artifact() {
+ function mender_fixup() {
+   rm -rf "${TARGET_DIR}"/var/lib/mender
+   mkdir -p "${TARGET_DIR}"/var/lib/mender
+-  echo "device_type=${DEVICE_TYPE}" > "${TARGET_DIR}"/var/lib/mender/device_type
+-
++  echo "device_type=${COMPATIBLE_TYPE}" > "${TARGET_DIR}"/etc/mender/device_type
+ }
+ 
+ mender_fixup
+diff --git a/support/testing/tests/package/test_mender/rootfs-overlay/etc/mender/mender.conf b/support/testing/tests/package/test_mender/rootfs-overlay/etc/mender/mender.conf
+new file mode 100644
+index 00000000..5f423fb2
+--- /dev/null
++++ b/support/testing/tests/package/test_mender/rootfs-overlay/etc/mender/mender.conf
+@@ -0,0 +1,11 @@
++{
++  "InventoryPollIntervalSeconds": 1800,
++  "UpdatePollIntervalSeconds": 1800,
++  "RetryPollIntervalSeconds": 300,
++  "RootfsPartA": "/dev/vda2",
++  "RootfsPartB": "/dev/vda3",
++  "ServerCertificate": "/etc/mender/server.crt",
++  "ServerURL": "https://docker.mender.io",
++  "TenantToken": "dummy",
++  "DeviceTypeFile": "/etc/mender/device_type"
++}
 -- 
-2.55.0
+2.56.0
 

@@ -1,7 +1,7 @@
-From 8684c74559bc402592818cba6b6c6338075f8e16 Mon Sep 17 00:00:00 2001
+From 26954fe4995593c568871f5bb3754d8e423be1cc Mon Sep 17 00:00:00 2001
 From: Adam Duskett <adam.duskett@amarulasolutions.com>
-Date: Mon, 27 Jul 2026 11:53:51 +0200
-Subject: [PATCH 4/5] package/yaml-cpp: bump version to 0.9.0
+Date: Tue, 27 Oct 2026 13:01:30 +0100
+Subject: [PATCH 6/7] package/yaml-cpp: bump version to 0.9.0
 
 Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
 ---
@@ -34,5 +34,5 @@ index c259f1e5..b963dba0 100644
  YAML_CPP_LICENSE = MIT
  YAML_CPP_LICENSE_FILES = LICENSE
 -- 
-2.55.0
+2.56.0
 

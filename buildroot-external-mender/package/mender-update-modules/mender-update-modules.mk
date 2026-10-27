@@ -4,24 +4,27 @@
 #
 ################################################################################
 
-MENDER_UPDATE_MODULES_VERSION = 662b237b9a09ddadbe82daeac4181be3e0cfbd4a
+MENDER_UPDATE_MODULES_VERSION = 3745bbea3fc8ce73cf6489a58fb77dfb66660ebf
 MENDER_UPDATE_MODULES_SITE = $(call github,mendersoftware,mender-update-modules,$(MENDER_UPDATE_MODULES_VERSION))
 MENDER_UPDATE_MODULES_LICENSE = Apache-2.0
 MENDER_UPDATE_MODULES_LICENSE_FILES = LICENSE
-MENDER_UPDATE_MODULES_DEPENDENCIES = mender
+MENDER_UPDATE_MODULES_DEPENDENCIES = host-mender-artifact mender
+
+MENDER_UPDATE_MODULES_MODULES = script
+
+ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_BANNER),y)
+MENDER_UPDATE_MODULES_MODULES += banner
+endif
 
 ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_DFU),y)
-MENDER_UPDATE_MODULES_DEPENDENCIES += host-mender-artifact
 MENDER_UPDATE_MODULES_MODULES += dfu
 endif
 
 ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_DIR_OVERLAY),y)
-MENDER_UPDATE_MODULES_DEPENDENCIES += host-mender-artifact
 MENDER_UPDATE_MODULES_MODULES += dir-overlay
 endif
 
 ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_DIRTY),y)
-MENDER_UPDATE_MODULES_DEPENDENCIES += host-mender-artifact
 MENDER_UPDATE_MODULES_MODULES += dirty
 endif
 
@@ -33,11 +36,24 @@ ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_IPK),y)
 MENDER_UPDATE_MODULES_MODULES += ipk
 endif
 
+ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_PERSISTENT_APP),y)
+MENDER_UPDATE_MODULES_MODULES += persistent-app
+define MENDER_UPDATE_MODULES_INSTALL_MENDER_PERSISTENT_APP_GEN
+	$(INSTALL) -D -m 0755 $(@D)/persistent-app/module-artifact-gen/persistent-app-artifact-gen \
+		$(HOST_DIR)/bin/persistent-app-artifact-gen
+endef
+MENDER_UPDATE_MODULES_POST_INSTALL_TARGET_HOOKS += MENDER_UPDATE_MODULES_INSTALL_MENDER_PERSISTENT_APP_GEN
+endif
+
+ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_PODMAN),y)
+MENDER_UPDATE_MODULES_MODULES += podman
+endif
+
 ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_REBOOT),y)
 MENDER_UPDATE_MODULES_MODULES += reboot
 define MENDER_UPDATE_MODULES_INSTALL_MENDER_REBOOT_GEN
 	$(INSTALL) -D -m 0755 $(@D)/reboot/reboot-gen \
-		$(HOST_DIR)/bin/reboot-gen
+		$(HOST_DIR)/bin/reboot-artifact-gen
 endef
 MENDER_UPDATE_MODULES_POST_INSTALL_TARGET_HOOKS += MENDER_UPDATE_MODULES_INSTALL_MENDER_REBOOT_GEN
 endif
@@ -56,22 +72,18 @@ ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_RPM),y)
 MENDER_UPDATE_MODULES_MODULES += rpm
 endif
 
-ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_SCRIPT),y)
-MENDER_UPDATE_MODULES_MODULES += script
-endif
-
 ifeq ($(BR2_PACKAGE_MENDER_UPDATE_MODULES_SWU),y)
 MENDER_UPDATE_MODULES_MODULES += jq swu
 endif
 
 define MENDER_UPDATE_MODULES_INSTALL_TARGET_CMDS
 	$(foreach f,$(MENDER_UPDATE_MODULES_MODULES), \
-	$(INSTALL) -D -m 0755 $(@D)/$(f)/module/$(f) \
-		$(TARGET_DIR)/usr/share/mender/modules/v3/$(f); \
-	if [ -d $(@D)/$(f)/module-artifact-gen ]; then \
-		$(INSTALL) -D -m 0755 $(@D)/$(f)/module-artifact-gen/$(f)-artifact-gen \
-			$(HOST_DIR)/bin/$(f)-artifact-gen; \
-	fi; \
+		$(INSTALL) -D -m 0775 $(@D)/$(f)/module/$(f) \
+			$(TARGET_DIR)/usr/share/mender/modules/v3/$(f); \
+		if [ -d $(@D)/$(f)/module-artifact-gen ]; then \
+			$(INSTALL) -D -m 0775 $(@D)/$(f)/module-artifact-gen/$(f)-artifact-gen \
+				$(HOST_DIR)/bin/$(f)-artifact-gen; \
+		fi; \
 	)
 endef
 
