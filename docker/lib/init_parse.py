@@ -20,7 +20,7 @@ class InitParse:
         self.exit_after_build = JSONHelper.parse_attr(
             environment, "exit_after_build", bool, True
         )[1]
-        self.user = JSONHelper.parse_attr(environment, "user", str, "br-user")[1]
+        self.user = JSONHelper.parse_attr(environment, "user", str, "builder")[1]
         self.update = JSONHelper.parse_attr(
             environment, "update_buildroot", bool, False
         )[1]
@@ -112,7 +112,7 @@ class InitParse:
                 sys.exit(-1)
         self.logger = Logger(__name__)
         self.apply_configs = bool(apply_configs)
-        self.user: str = "br-user"
+        self.user: str = "builder"
         self.buildroot_dir_name: str = "buildroot"
         self.buildroot_path: str = f"/home/{self.user}/buildroot"
         self.fragment_dir: str = ""

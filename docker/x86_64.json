@@ -3,7 +3,7 @@
     "buildroot_dir_name": "buildroot",
     "exit_after_build": false,
     "update_buildroot": false,
-    "user": "br-user"
+    "user": "builder"
   }],
   "configs": [{
     "build": true,

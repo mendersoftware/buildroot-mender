@@ -2,7 +2,7 @@
 # However, it is under active development!
 #
 #
-# It is recommended you use this repository for the latest mender packagess if you plan on using Mender with your Buildroot system, as the maintainers of Buildroot are slow to respond to pull requests that bump the Mender package versions. Sometimes up to 4+ months.
+# It is recommended you use this repository for mender packages not provided by Buildroot.
 
 # Buildroot community board integrations for Mender
 
